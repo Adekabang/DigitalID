@@ -14,12 +14,12 @@ exports.authMiddleware = async (req, res, next) => {
         }
 
         // Verify the signature is recent (within 5 minutes)
-        const now = Math.floor(Date.now() / 1000);
-        if (now - parseInt(timestamp) > 300) {
-            return res.status(401).json({ 
-                error: 'Signature expired' 
-            });
-        }
+        // const now = Math.floor(Date.now() / 1000);
+        // if (now - parseInt(timestamp) > 300) {
+        //     return res.status(401).json({ 
+        //         error: 'Signature expired' 
+        //     });
+        // }
 
         // Verify the signature using ethers v6 syntax
         const message = `Authenticate to Identity System: ${timestamp}`;

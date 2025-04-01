@@ -1,7 +1,9 @@
 const { ethers } = require('ethers');
+const {BigNumber} = require('ethers');
 const fs = require('fs');
 const path = require('path');
 const logger = require('./logger');
+const { type } = require('os');
 
 class BlockchainService {
     constructor() {
@@ -140,7 +142,8 @@ class BlockchainService {
         try {
             const totalSupply = await this.digitalIdentityNFT.totalSupply();
             const startIndex = (page - 1) * limit;
-            const endIndex = Math.min(startIndex + limit, totalSupply);
+            const totalSupplyNum = Number(totalSupply.toString());
+            const endIndex = Math.min(startIndex + limit, totalSupplyNum);
             
             const identities = [];
             for (let i = startIndex; i < endIndex; i++) {
@@ -162,7 +165,7 @@ class BlockchainService {
                 total: totalSupply.toString(),
                 page,
                 limit,
-                pages: Math.ceil(totalSupply / limit)
+                pages: Math.ceil(totalSupplyNum / limit)
             };
         } catch (error) {
             logger.error('Get all identities error:', error);
