@@ -1,3 +1,4 @@
+// contracts/DigitalIdentityNFT.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
@@ -15,6 +16,7 @@ contract DigitalIdentityNFT is ERC721, Ownable {
         uint256 creationDate;
     }
 
+    mapping(address => uint256) public addressToTokenId;
     mapping(uint256 => Identity) public identities;
     mapping(address => bool) public hasIdentity;
 
@@ -24,6 +26,7 @@ contract DigitalIdentityNFT is ERC721, Ownable {
         string did
     );
     event IdentityVerified(uint256 indexed tokenId);
+    event DebugLog(string message, address user, uint256 tokenId);
 
     constructor() ERC721("Digital Identity", "DID") {}
 
@@ -39,13 +42,29 @@ contract DigitalIdentityNFT is ERC721, Ownable {
         _safeMint(user, newTokenId);
         identities[newTokenId] = Identity(did, false, block.timestamp);
         hasIdentity[user] = true;
+        addressToTokenId[user] = newTokenId;
 
         emit IdentityCreated(newTokenId, user, did);
+        emit DebugLog("Identity created", user, newTokenId);
+
         return newTokenId;
     }
 
-    function verifyIdentity(uint256 tokenId) external onlyOwner {
-        require(_exists(tokenId), "Identity does not exist");
+    function getIdentity(address user) external view returns (Identity memory) {
+        require(hasIdentity[user], "Identity does not exist");
+        uint256 tokenId = addressToTokenId[user];
+        require(tokenId > 0, "Token ID not found");
+        return identities[tokenId];
+    }
+
+    function getTokenId(address user) external view returns (uint256) {
+        require(hasIdentity[user], "Identity does not exist");
+        return addressToTokenId[user];
+    }
+
+    function verifyIdentity(address user) external onlyOwner {
+        require(hasIdentity[user], "Identity does not exist");
+        uint256 tokenId = addressToTokenId[user];
         identities[tokenId].isVerified = true;
         emit IdentityVerified(tokenId);
     }
@@ -64,11 +83,7 @@ contract DigitalIdentityNFT is ERC721, Ownable {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    // Remove onlyOwner from createIdentity and add it to other functions as needed
-    function getIdentity(
-        uint256 tokenId
-    ) external view returns (Identity memory) {
-        require(_exists(tokenId), "Identity does not exist");
-        return identities[tokenId];
+    function setModeratorControl(address moderatorControl) external onlyOwner {
+        _transferOwnership(moderatorControl);
     }
 }

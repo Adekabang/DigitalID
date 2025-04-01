@@ -220,4 +220,17 @@ contract ModeratorControl is AccessControl, Pausable {
     ) external onlyRole(MODERATOR_ROLE) {
         digitalIdentity.createIdentity(user, did);
     }
+
+    function verifyIdentity(address user) external onlyRole(MODERATOR_ROLE) {
+        require(digitalIdentity.hasIdentity(user), "Identity does not exist");
+
+        // Verify the identity
+        digitalIdentity.verifyIdentity(user);
+
+        // Emit event
+        emit IdentityVerified(user);
+    }
+
+    // Add this event at the top of the contract
+    event IdentityVerified(address indexed user);
 }
