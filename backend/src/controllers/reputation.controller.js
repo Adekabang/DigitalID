@@ -27,8 +27,8 @@ exports.updateReputation = async (req, res) => {
             });
         }
 
-        // Call the reputation system contract to update the score
-        const tx = await blockchainService.reputationSystem.updateScore(
+        // Call the moderator control contract instead of reputation system directly
+        const tx = await blockchainService.moderatorControl.updateUserReputation(
             address,
             points
         );
@@ -44,6 +44,9 @@ exports.updateReputation = async (req, res) => {
             updatedReputation
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Update reputation error:', error);
+        res.status(500).json({ 
+            error: error.message 
+        });
     }
 };

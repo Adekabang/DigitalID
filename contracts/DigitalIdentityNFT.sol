@@ -1,4 +1,3 @@
-// contracts/DigitalIdentityNFT.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
@@ -30,10 +29,14 @@ contract DigitalIdentityNFT is ERC721, Ownable {
 
     constructor() ERC721("Digital Identity", "DID") {}
 
+    function checkIdentityExists(address user) public view returns (bool) {
+        return hasIdentity[user];
+    }
+
     function createIdentity(
         address user,
         string memory did
-    ) external returns (uint256) {
+    ) external onlyOwner returns (uint256) {
         require(!hasIdentity[user], "User already has an identity");
 
         _tokenIds.increment();
@@ -69,6 +72,10 @@ contract DigitalIdentityNFT is ERC721, Ownable {
         emit IdentityVerified(tokenId);
     }
 
+    function setModeratorControl(address moderatorControl) external onlyOwner {
+        _transferOwnership(moderatorControl);
+    }
+
     // Override transfer functions to make NFTs non-transferable
     function _beforeTokenTransfer(
         address from,
@@ -83,7 +90,7 @@ contract DigitalIdentityNFT is ERC721, Ownable {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function setModeratorControl(address moderatorControl) external onlyOwner {
-        _transferOwnership(moderatorControl);
+    function totalSupply() public view returns (uint256) {
+        return _tokenIds.current();
     }
 }

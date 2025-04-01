@@ -95,4 +95,39 @@ contract ReputationSystem is Ownable {
     ) external view returns (ReputationScore memory) {
         return reputationScores[user];
     }
+
+    function updateScoreFromModerator(
+        address user,
+        int256 points
+    ) external onlyOwner {
+        require(
+            digitalIdentity.hasIdentity(user),
+            "User must have digital identity"
+        );
+
+        ReputationScore storage userScore = reputationScores[user];
+        require(userScore.lastUpdate > 0, "Score not initialized");
+
+        int256 newScore = int256(userScore.score) + points;
+
+        if (newScore < int256(MIN_SCORE)) {
+            userScore.score = MIN_SCORE;
+        } else if (newScore > int256(MAX_SCORE)) {
+            userScore.score = MAX_SCORE;
+        } else {
+            userScore.score = uint256(newScore);
+        }
+
+        userScore.lastUpdate = block.timestamp;
+
+        if (userScore.score < BAN_THRESHOLD && !userScore.isBanned) {
+            userScore.isBanned = true;
+            emit UserBanned(user);
+        } else if (userScore.score >= BAN_THRESHOLD && userScore.isBanned) {
+            userScore.isBanned = false;
+            emit UserUnbanned(user);
+        }
+
+        emit ScoreUpdated(user, userScore.score);
+    }
 }

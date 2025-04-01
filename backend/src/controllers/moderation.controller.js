@@ -10,7 +10,7 @@ exports.createCase = async (req, res) => {
             });
         }
 
-        const result = await blockchainService.createModerationCase(
+        const result = await blockchainService.moderatorControl.createModerationCase(
             address,
             actionType,
             reason
@@ -30,11 +30,11 @@ exports.getCases = async (req, res) => {
             const caseDetails = await blockchainService.moderatorControl.getCaseDetails(i);
             cases.push({
                 id: i,
-                user: caseDetails[0],
-                actionType: caseDetails[1],
+                user: caseDetails[0].toString(),
+                actionType: caseDetails[1].toString(),
                 reason: caseDetails[2],
                 timestamp: caseDetails[3].toString(),
-                moderator: caseDetails[4],
+                moderator: caseDetails[4].toString(),
                 isResolved: caseDetails[5]
             });
         }

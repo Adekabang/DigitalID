@@ -59,6 +59,9 @@ contract ModeratorControl is AccessControl, Pausable {
     );
     event RestrictionRemoved(address indexed user);
 
+    // Add this event at the top of the contract
+    event IdentityVerified(address indexed user);
+
     constructor(address _digitalIdentityAddress, address _reputationAddress) {
         digitalIdentity = DigitalIdentityNFT(_digitalIdentityAddress);
         reputationSystem = ReputationSystem(_reputationAddress);
@@ -219,6 +222,7 @@ contract ModeratorControl is AccessControl, Pausable {
         string memory did
     ) external onlyRole(MODERATOR_ROLE) {
         digitalIdentity.createIdentity(user, did);
+        reputationSystem.initializeUserScore(user);
     }
 
     function verifyIdentity(address user) external onlyRole(MODERATOR_ROLE) {
@@ -230,7 +234,10 @@ contract ModeratorControl is AccessControl, Pausable {
         // Emit event
         emit IdentityVerified(user);
     }
-
-    // Add this event at the top of the contract
-    event IdentityVerified(address indexed user);
+    function updateUserReputation(
+        address user,
+        int256 points
+    ) external onlyRole(MODERATOR_ROLE) {
+        reputationSystem.updateScoreFromModerator(user, points);
+    }
 }
