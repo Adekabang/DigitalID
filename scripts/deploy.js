@@ -3,6 +3,9 @@ const hre = require("hardhat");
 async function main() {
     console.log("Starting deployment...");
 
+    const [deployer] = await hre.ethers.getSigners();
+    console.log("Deploying contracts with account:", deployer.address);
+
     // Get the contract factories
     const DigitalIdentityNFT = await hre.ethers.getContractFactory("DigitalIdentityNFT");
     const ReputationSystem = await hre.ethers.getContractFactory("ReputationSystem");
@@ -41,15 +44,21 @@ async function main() {
 
     console.log("Deployment completed!");
 
-    // Return the contract addresses
-    return {
+    // Save the contract addresses
+    const addresses = {
         digitalIdentityNFT: digitalIdentityNFT.address,
         reputationSystem: reputationSystem.address,
         moderatorControl: moderatorControl.address
     };
+
+    // Save addresses to a file
+    const fs = require("fs");
+    fs.writeFileSync("deployed-addresses.json", JSON.stringify(addresses, null, 2));
+    console.log("Contract addresses saved to deployed-addresses.json");
+
+    return addresses;
 }
 
-// Execute deployment
 main()
     .then(() => process.exit(0))
     .catch((error) => {
