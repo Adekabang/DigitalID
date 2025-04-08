@@ -1,73 +1,78 @@
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const { ethers } = require('ethers');
+const { errorHandler } = require('./middleware/error.middleware');
+const {
+    helmetConfig,
+    corsConfig,
+    additionalHeaders,
+} = require('./middleware/security.middleware');
+const {
+    createRateLimiter,
+    apiLimiter,
+} = require('./middleware/rate-limit.middleware');
+const logger = require('./utils/logger');
+
 const dotenv = require('dotenv');
 
 // Load environment variables
 dotenv.config();
 
 // Import routes
+const authRoutes = require('./auth/auth.routes');
 const identityRoutes = require('./routes/identity.routes');
 const reputationRoutes = require('./routes/reputation.routes');
 const moderationRoutes = require('./routes/moderation.routes');
 const systemRoutes = require('./routes/system.routes');
-const authRoutes = require('./auth/auth.routes');
-
-// Import middleware
-const { errorHandler } = require('./middleware/error.middleware');
-const { authMiddleware } = require('./middleware/auth.middleware');
 
 const app = express();
 
-// Middleware
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+// Security middleware
+app.use(helmetConfig);
+app.use(corsConfig);
+app.use(additionalHeaders);
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+// Basic middleware
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Global rate limiter
+app.use(createRateLimiter());
+
+// Health check endpoint (no rate limit)
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
-app.use(limiter);
 
-// Basic route for testing
-app.get('/', (req, res) => {
-    res.json({ message: 'Blockchain Identity System API' });
-});
-
-// Routes
-app.use('/api/identity', identityRoutes);
-app.use('/api/reputation', reputationRoutes);
-app.use('/api/moderation', moderationRoutes);
-app.use('/api/system', systemRoutes);
+// API routes with rate limiting
 app.use('/api/auth', authRoutes);
+app.use('/api/identity', apiLimiter, identityRoutes);
+app.use('/api/reputation', apiLimiter, reputationRoutes);
+app.use('/api/moderation', apiLimiter, moderationRoutes);
+app.use('/api/system', apiLimiter, systemRoutes);
 
-// Error handling
+// 404 handler
+app.use((req, res, next) => {
+    next(new NotFoundError(`Route ${req.originalUrl} not found`));
+});
+
+// Global error handler
 app.use(errorHandler);
 
-// Handle 404 routes
-app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-    console.error('Unhandled Promise Rejection:', err);
-});
-
-// Handle uncaught exceptions
+// Uncaught exception handler
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
+    logger.error('UNCAUGHT EXCEPTION:', err);
     process.exit(1);
+});
+
+// Unhandled rejection handler
+process.on('unhandledRejection', (err) => {
+    logger.error('UNHANDLED REJECTION:', err);
+    process.exit(1);
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
 });
 
 module.exports = app;
