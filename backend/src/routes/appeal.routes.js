@@ -1,3 +1,5 @@
+// backend/src/routes/appeal.routes.js
+
 const express = require('express');
 const { body, param } = require('express-validator');
 const { ethers } = require('ethers');
@@ -7,17 +9,20 @@ const { authMiddleware } = require('../middleware/auth.middleware');
 const {
     validate,
     commonValidations,
+    isEthereumAddress,
 } = require('../middleware/validation.middleware');
 
-// Submit an appeal
+// Submit a signed appeal
 router.post(
+    // Consider renaming to /submit-signed for clarity
     '/submit',
-    authMiddleware,
+    authMiddleware, // Ensures user is logged in via JWT
     validate([
-        body('address')
+        // --- UPDATED Validation Rules ---
+        body('userAddress') // Expect user's address in body
             .exists()
-            .custom((value) => ethers.isAddress(value))
-            .withMessage('Invalid Ethereum address'),
+            .custom(isEthereumAddress)
+            .withMessage('Invalid or missing userAddress'),
         body('reason')
             .exists()
             .isString()
@@ -34,15 +39,24 @@ router.post(
             .exists()
             .isInt({ min: 0 })
             .withMessage('Valid case ID is required'),
+        body('signature') // Expect signature in body
+            .exists()
+            .isString()
+            .matches(/^0x[a-fA-F0-9]+$/) // Basic hex check
+            .isLength({ min: 132, max: 132 }) // 65 bytes hex = 130 chars + 0x prefix
+            .withMessage('Invalid or missing signature format'),
+        // --- End UPDATED Validation Rules ---
     ]),
-    appealController.submitAppeal,
+    appealController.submitAppeal, // Controller needs to handle these fields
 );
 
-// Get appeal status
+// Get appeal status (no change needed here)
 router.get(
     '/status/:address/:appealIndex',
     validate([
-        ...commonValidations.addressParam,
+        param('address')
+            .custom(isEthereumAddress)
+            .withMessage('Invalid Ethereum address format in URL'),
         param('appealIndex')
             .isInt({ min: 0 })
             .withMessage('Invalid appeal index'),
@@ -50,17 +64,20 @@ router.get(
     appealController.getAppealStatus,
 );
 
-// Get appeal history
+// Get appeal history (no change needed here)
 router.get(
     '/history/:address',
     validate([
-        ...commonValidations.addressParam,
+        param('address')
+            .custom(isEthereumAddress)
+            .withMessage('Invalid Ethereum address format in URL'),
         ...commonValidations.pagination,
     ]),
     appealController.getAppealHistory,
 );
 
-// Confirm appeal (for recovery contacts)
+// Confirm appeal (for recovery contacts) - NOTE: This relates to VerificationRegistry
+// No change needed here based on AppealSystem modifications
 router.post(
     '/confirm/:requestId',
     authMiddleware,
