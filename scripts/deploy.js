@@ -3,6 +3,11 @@ const hre = require('hardhat');
 const fs = require('fs');
 const path = require('path');
 
+// Helper to get SCALE_FACTOR (assuming it's public or accessible in ReputationSystem)
+// If ReputationSystem.SCALE_FACTOR is not accessible directly, define it here.
+// It's defined as public constant in the contract, so it should be accessible.
+// const SCALE_FACTOR = hre.ethers.BigNumber.from('1000000000000000000'); // 1e18
+
 async function main() {
     console.log('🚀 Starting deployment process...');
 
@@ -156,8 +161,7 @@ async function main() {
     const VERIFIER_ROLE_NFT = await digitalIdentityNFT.VERIFIER_ROLE();
     const RECOVERY_ROLE_NFT = await digitalIdentityNFT.RECOVERY_ROLE();
 
-    // --- FIX: Grant VERIFIER_ROLE to ModeratorControl contract ---
-    // ModeratorControl contract needs this role to call digitalIdentity.createIdentity
+    // Grant VERIFIER_ROLE to ModeratorControl contract
     console.log(
         `    Attempting to grant VERIFIER_ROLE (${VERIFIER_ROLE_NFT}) to ModeratorControl (${moderatorControl.address})...`,
     );
@@ -169,9 +173,8 @@ async function main() {
     console.log(
         `    ✅ VERIFIER_ROLE granted to ModeratorControl (${moderatorControl.address})`,
     );
-    // --- End Fix ---
 
-    // Grant RECOVERY_ROLE to VerificationRegistry contract (it calls transferIdentity)
+    // Grant RECOVERY_ROLE to VerificationRegistry contract
     console.log(
         `    Attempting to grant RECOVERY_ROLE (${RECOVERY_ROLE_NFT}) to VerificationRegistry (${verificationRegistry.address})...`,
     );
@@ -213,7 +216,6 @@ async function main() {
     console.log(`    ✅ MFA_VERIFIER_ROLE granted to Backend Signer`);
 
     // 7g. Grant Roles in AppealSystem to Backend Signer (for testing/initial admin)
-    // Note: Constructor already adds deployer as reviewer & grants role, this might be redundant but ensures it.
     console.log('  - Granting roles in AppealSystem...');
     const APPEAL_REVIEWER_ROLE_AS = await appealSystem.APPEAL_REVIEWER_ROLE();
     tx = await appealSystem.grantRole(
@@ -230,6 +232,39 @@ async function main() {
     console.log(
         `    ✅ AppealSystem address set in ModeratorControl to ${appealSystem.address}`,
     );
+
+    // --- ADDED STEP 7i: Configure Reputation Weights ---
+    console.log(
+        '  - Configuring ReputationSystem weights (setting negative to 1x)...',
+    );
+    // Get SCALE_FACTOR from the deployed contract instance
+    const SCALE_FACTOR = await reputationSystem.SCALE_FACTOR();
+    // Define desired weights
+    const newPositiveWeight = SCALE_FACTOR; // 1 * 1e18 (1.0x)
+    const newNegativeWeight = SCALE_FACTOR; // 1 * 1e18 (1.0x)
+
+    // Get current other settings from the deployed ReputationSystem contract
+    const currentConfig = await reputationSystem.getWeightConfig();
+    const currentDecayRate = currentConfig.decayRate;
+    const currentDecayPeriod = currentConfig.decayPeriod;
+    const currentActivityMultiplier = currentConfig.activityMultiplier;
+
+    // Call the new function in ModeratorControl (requires DEFAULT_ADMIN_ROLE, which deployer has)
+    console.log(
+        `    Calling configureReputationWeights with: Pos=${newPositiveWeight}, Neg=${newNegativeWeight}, Rate=${currentDecayRate}, Period=${currentDecayPeriod}, Multiplier=${currentActivityMultiplier}`,
+    );
+    tx = await moderatorControl.configureReputationWeights(
+        newPositiveWeight,
+        newNegativeWeight,
+        currentDecayRate, // Keep existing decay rate
+        currentDecayPeriod, // Keep existing decay period
+        currentActivityMultiplier, // Keep existing activity multiplier
+    );
+    await tx.wait();
+    console.log(
+        `    ✅ Reputation weights configured: Positive=1.0x, Negative=1.0x`,
+    );
+    // --- END STEP 7i ---
 
     console.log('\n✅ Post-Deployment Setup Complete.');
 

@@ -1,52 +1,84 @@
+// backend/src/controllers/reputation.controller.js
 const blockchainService = require('../utils/blockchain');
+const logger = require('../utils/logger');
+const { ValidationError, AppError } = require('../middleware/error.middleware');
+const { ethers } = require('ethers'); // Import ethers if needed for validation
 
-exports.getReputation = async (req, res) => {
+exports.getReputation = async (req, res, next) => {
+    // Add next
     try {
         const { address } = req.params;
-        
-        if (!address) {
-            return res.status(400).json({ 
-                error: 'Address is required' 
-            });
+
+        if (!address || !ethers.isAddress(address)) {
+            throw new ValidationError(
+                'Invalid Ethereum address format in URL parameter',
+            );
         }
 
+        // getReputation now throws on error
         const reputation = await blockchainService.getUserReputation(address);
-        res.json(reputation);
+        res.json({
+            success: true,
+            data: reputation,
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error(`Get reputation controller error: ${error.message}`);
+        // Handle specific errors like identity not found if getUserReputation throws them
+        next(error); // Pass to central error handler
     }
 };
 
-exports.updateReputation = async (req, res) => {
+exports.updateReputation = async (req, res, next) => {
+    // Add next
     try {
         const { address, points } = req.body;
-        
-        if (!address || points === undefined) {
-            return res.status(400).json({ 
-                error: 'Address and points are required' 
-            });
+
+        // --- Validation ---
+        if (!address || !ethers.isAddress(address)) {
+            throw new ValidationError(
+                'Invalid or missing Ethereum address in request body',
+            );
         }
+        // Ensure points is an integer (can be negative)
+        if (
+            points === undefined ||
+            typeof points !== 'number' ||
+            !Number.isInteger(points)
+        ) {
+            throw new ValidationError(
+                'Invalid or missing points value (must be an integer)',
+            );
+        }
+        // --- End Validation ---
 
-        // Call the moderator control contract instead of reputation system directly
-        const tx = await blockchainService.moderatorControl.updateUserReputation(
-            address,
-            points
+        // --- FIX: Use executeTransaction ---
+        // Call ModeratorControl.updateUserReputation via the service helper
+        logger.info(
+            `Attempting reputation update for ${address} with points ${points}`,
         );
-        await tx.wait();
+        const result = await blockchainService.executeTransaction(
+            'ModeratorControl', // Contract Name
+            'updateUserReputation', // Method Name
+            [address, points], // Arguments array
+        );
+        // --- End Fix ---
 
+        // Fetch the updated reputation to return it
         const updatedReputation = await blockchainService.getUserReputation(
-            address
+            address,
         );
-        
+
         res.json({
             success: true,
-            transactionHash: tx.hash,
-            updatedReputation
+            message: 'Reputation update transaction successful.',
+            data: {
+                transactionHash: result.transactionHash,
+                blockNumber: result.blockNumber,
+                updatedReputation,
+            },
         });
     } catch (error) {
-        console.error('Update reputation error:', error);
-        res.status(500).json({ 
-            error: error.message 
-        });
+        logger.error(`Update reputation controller error: ${error.message}`);
+        next(error); // Pass to central error handler
     }
 };
