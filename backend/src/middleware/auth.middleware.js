@@ -1,38 +1,55 @@
-// backend/src/middleware/auth.middleware.js
-const { ethers } = require('ethers');
+const authService = require('../auth/auth.service');
+const logger = require('../utils/logger');
 
 exports.authMiddleware = async (req, res, next) => {
     try {
-        const signature = req.headers['x-signature'];
-        const address = req.headers['x-address'];
-        const timestamp = req.headers['x-timestamp'];
+        const authHeader = req.headers.authorization;
 
-        if (!signature || !address || !timestamp) {
-            return res.status(401).json({ 
-                error: 'Missing authentication headers' 
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                error: 'No token provided',
             });
         }
 
-        // Verify the signature is recent (within 5 minutes)
-        const now = Math.floor(Date.now() / 1000);
-        if (now - parseInt(timestamp) > 300) {
-            return res.status(401).json({ 
-                error: 'Signature expired' 
+        const token = authHeader.split(' ')[1];
+        const decoded = authService.verifyToken(token);
+
+        if (!decoded) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid token',
             });
         }
 
-        // Verify the signature using ethers v6 syntax
-        const message = `Authenticate to Identity System: ${timestamp}`;
-        const recoveredAddress = ethers.verifyMessage(message, signature);
+        // Add user to request object
+        req.user = decoded;
+        next();
+    } catch (error) {
+        logger.error('Auth middleware error:', error);
+        res.status(401).json({
+            success: false,
+            error: 'Authentication failed',
+        });
+    }
+};
 
-        if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
-            return res.status(401).json({ 
-                error: 'Invalid signature' 
+exports.requireRoles = (roles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                error: 'User not authenticated',
+            });
+        }
+
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                error: 'Insufficient permissions',
             });
         }
 
         next();
-    } catch (error) {
-        res.status(401).json({ error: 'Authentication failed' });
-    }
+    };
 };

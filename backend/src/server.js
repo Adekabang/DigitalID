@@ -13,6 +13,7 @@ const identityRoutes = require('./routes/identity.routes');
 const reputationRoutes = require('./routes/reputation.routes');
 const moderationRoutes = require('./routes/moderation.routes');
 const systemRoutes = require('./routes/system.routes');
+const authRoutes = require('./auth/auth.routes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/error.middleware');
@@ -28,7 +29,7 @@ app.use(express.json());
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
+    max: 100, // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
@@ -42,6 +43,7 @@ app.use('/api/identity', identityRoutes);
 app.use('/api/reputation', reputationRoutes);
 app.use('/api/moderation', moderationRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/auth', authRoutes);
 
 // Error handling
 app.use(errorHandler);
