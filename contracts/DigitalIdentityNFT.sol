@@ -78,6 +78,15 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
         return super.supportsInterface(interfaceId);
     }
 
+    // --- Add this view function ---
+    /**
+     * @notice Returns the current highest assigned token ID.
+     * @dev Useful for understanding the total number of minted tokens.
+     */
+    function getCurrentTokenId() external view returns (uint256) {
+        return _tokenIds.current();
+    }
+
     // Modified identity creation function
     function createIdentity(
         address user,

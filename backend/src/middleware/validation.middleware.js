@@ -4,6 +4,7 @@ const logger = require('../utils/logger');
 
 // Custom validator for Ethereum addresses
 const isEthereumAddress = (value) => {
+    console.log(value);
     return ethers.isAddress(value);
 };
 
@@ -93,4 +94,5 @@ const validate = (validations) => {
 module.exports = {
     validate,
     commonValidations,
+    isEthereumAddress, // <-- Add this export
 };
