@@ -22,6 +22,8 @@ const identityRoutes = require('./routes/identity.routes');
 const reputationRoutes = require('./routes/reputation.routes');
 const moderationRoutes = require('./routes/moderation.routes');
 const systemRoutes = require('./routes/system.routes');
+const appealRoutes = require('./routes/appeal.routes'); // New
+const mfaRoutes = require('./routes/mfa.routes'); // New
 
 const app = express();
 
@@ -48,6 +50,8 @@ app.use('/api/identity', apiLimiter, identityRoutes);
 app.use('/api/reputation', apiLimiter, reputationRoutes);
 app.use('/api/moderation', apiLimiter, moderationRoutes);
 app.use('/api/system', apiLimiter, systemRoutes);
+app.use('/api/appeal', apiLimiter, appealRoutes); // New
+app.use('/api/mfa', apiLimiter, mfaRoutes); // New
 
 // 404 handler
 app.use((req, res, next) => {

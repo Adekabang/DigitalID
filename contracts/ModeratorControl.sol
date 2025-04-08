@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "./DigitalIdentityNFT.sol";
-import "./ReputationSystem.sol";
+import '@openzeppelin/contracts/access/AccessControl.sol';
+import '@openzeppelin/contracts/security/Pausable.sol';
+import './DigitalIdentityNFT.sol';
+import './ReputationSystem.sol';
+import './AppealSystem.sol';
 
 contract ModeratorControl is AccessControl, Pausable {
-    bytes32 public constant MODERATOR_ROLE = keccak256("MODERATOR_ROLE");
-    bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
+    bytes32 public constant MODERATOR_ROLE = keccak256('MODERATOR_ROLE');
+    bytes32 public constant ORACLE_ROLE = keccak256('ORACLE_ROLE');
 
     DigitalIdentityNFT public digitalIdentity;
     ReputationSystem public reputationSystem;
+    AppealSystem public appealSystem;
 
     // Moderation thresholds
     uint256 public constant WARNING_THRESHOLD = 70;
@@ -75,7 +77,7 @@ contract ModeratorControl is AccessControl, Pausable {
         require(
             hasRole(MODERATOR_ROLE, msg.sender) ||
                 hasRole(ORACLE_ROLE, msg.sender),
-            "Caller must be moderator or oracle"
+            'Caller must be moderator or oracle'
         );
         _;
     }
@@ -95,7 +97,7 @@ contract ModeratorControl is AccessControl, Pausable {
     ) internal {
         require(
             digitalIdentity.hasIdentity(user),
-            "User must have digital identity"
+            'User must have digital identity'
         );
 
         userRestrictions[user] = actionType;
@@ -140,27 +142,33 @@ contract ModeratorControl is AccessControl, Pausable {
             _applyRestriction(
                 user,
                 ActionType.SEVERE_RESTRICTION,
-                "Score below severe threshold"
+                'Score below severe threshold'
             );
         } else if (score <= RESTRICTION_THRESHOLD) {
             _applyRestriction(
                 user,
                 ActionType.RESTRICTION,
-                "Score below restriction threshold"
+                'Score below restriction threshold'
             );
         } else if (score <= WARNING_THRESHOLD) {
             _applyRestriction(
                 user,
                 ActionType.WARNING,
-                "Score below warning threshold"
+                'Score below warning threshold'
             );
         }
     }
 
-    function removeRestriction(address user) external onlyRole(MODERATOR_ROLE) {
+    function removeRestriction(address user) external override {
         require(
-            userRestrictions[user] != ActionType.BAN,
-            "Cannot remove ban directly"
+            hasRole(MODERATOR_ROLE, msg.sender) ||
+                msg.sender == address(appealSystem),
+            'Caller must be moderator or appeal system'
+        );
+        require(
+            userRestrictions[user] != ActionType.BAN ||
+                msg.sender == address(appealSystem),
+            'Cannot remove ban except through appeal'
         );
         delete userRestrictions[user];
         emit RestrictionRemoved(user);
@@ -226,7 +234,7 @@ contract ModeratorControl is AccessControl, Pausable {
     }
 
     function verifyIdentity(address user) external onlyRole(MODERATOR_ROLE) {
-        require(digitalIdentity.hasIdentity(user), "Identity does not exist");
+        require(digitalIdentity.hasIdentity(user), 'Identity does not exist');
 
         // Verify the identity
         digitalIdentity.verifyIdentity(user);
@@ -239,5 +247,34 @@ contract ModeratorControl is AccessControl, Pausable {
         int256 points
     ) external onlyRole(MODERATOR_ROLE) {
         reputationSystem.updateScoreFromModerator(user, points);
+    }
+
+    function setAppealSystem(
+        address _appealSystem
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        appealSystem = AppealSystem(_appealSystem);
+    }
+
+    function getUserCases(
+        address user
+    ) external view returns (uint256[] memory) {
+        uint256 totalCases = caseCount;
+        uint256[] memory userCaseIds = new uint256[](totalCases);
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < totalCases; i++) {
+            if (moderationCases[i].user == user) {
+                userCaseIds[count] = i;
+                count++;
+            }
+        }
+
+        // Create correctly sized array
+        uint256[] memory result = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = userCaseIds[i];
+        }
+
+        return result;
     }
 }
