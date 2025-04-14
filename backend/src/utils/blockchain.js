@@ -320,6 +320,102 @@ class BlockchainService {
         }
     }
 
+    /**
+     * Retrieves the token URI for a given address's NFT
+     * @param {string} address - Ethereum address
+     * @returns {Promise<string>} The token URI
+     */
+    async getTokenURI(address) {
+        try {
+            if (!ethers.isAddress(address)) {
+                throw new Error(
+                    `Invalid address format provided to getTokenURI: ${address}`,
+                );
+            }
+
+            if (!(await this.hasIdentity(address))) {
+                const notFoundError = new Error(
+                    `Identity does not exist for address ${address}`,
+                );
+                notFoundError.code = 'IDENTITY_NOT_FOUND';
+                throw notFoundError;
+            }
+
+            const nftContract = this.getContract('DigitalIdentityNFT');
+            const tokenId = await nftContract.addressToTokenId(address);
+
+            if (!tokenId || tokenId.toString() === '0') {
+                throw new Error(
+                    `Token ID not found for user ${address} despite hasIdentity being true.`,
+                );
+            }
+
+            // Call the tokenURI function
+            logger.info(`Fetching tokenURI for token ID ${tokenId.toString()}`);
+            const tokenURI = await nftContract.tokenURI(tokenId);
+
+            // Validate the tokenURI format
+            if (!tokenURI) {
+                throw new Error(
+                    `Empty tokenURI returned for token ID ${tokenId.toString()}`,
+                );
+            }
+
+            if (!tokenURI.startsWith('data:application/json;base64,')) {
+                logger.warn(
+                    `TokenURI for ${address} has unexpected format: ${tokenURI.substring(
+                        0,
+                        50,
+                    )}...`,
+                );
+            }
+
+            // Generate a fallback URI if needed
+            if (!tokenURI.startsWith('data:application/json;base64,')) {
+                // Get basic identity info to construct a minimal valid tokenURI
+                const identity = await this.getIdentity(address);
+                const fallbackJson = {
+                    name: `Digital Identity #${tokenId}`,
+                    description: 'Blockchain-based Digital Identity NFT',
+                    image: `data:image/svg+xml,${encodeURIComponent(
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="350" height="350" viewBox="0 0 350 350">
+                            <rect width="100%" height="100%" fill="#f9f9f9" />
+                            <rect x="20" y="20" width="310" height="310" rx="15" fill="white" stroke="#333333" stroke-width="2" />
+                            <text x="175" y="100" font-family="Arial" font-size="20" fill="#333333" text-anchor="middle">
+                                Digital Identity
+                            </text>
+                            <text x="175" y="150" font-family="Arial" font-size="14" fill="#666666" text-anchor="middle">
+                                ID: ${tokenId}
+                            </text>
+                            <text x="175" y="180" font-family="Arial" font-size="14" fill="#666666" text-anchor="middle">
+                                DID: ${identity.did}
+                            </text>
+                            <text x="175" y="250" font-family="Arial" font-size="12" fill="#333333" text-anchor="middle">
+                                Owner: ${identity.owner}
+                            </text>
+                        </svg>`,
+                    )}`,
+                    attributes: [
+                        { trait_type: 'DID', value: identity.did },
+                        { trait_type: 'Token ID', value: tokenId.toString() },
+                        { trait_type: 'Owner', value: identity.owner },
+                    ],
+                };
+
+                return `data:application/json;base64,${Buffer.from(
+                    JSON.stringify(fallbackJson),
+                ).toString('base64')}`;
+            }
+
+            return tokenURI;
+        } catch (error) {
+            logger.error(
+                `Get token URI error for ${address}: ${error.message}`,
+            );
+            throw error;
+        }
+    }
+
     async approveIdentityVerification(address, level) {
         // ModeratorControl handles calling the NFT contract's verification
         return this.executeTransaction(

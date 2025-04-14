@@ -19,6 +19,7 @@ class IdentityController {
             this.approveIdentityVerification.bind(this);
         this.getAllIdentities = this.getAllIdentities.bind(this);
         this.checkIdentityStatus = this.checkIdentityStatus.bind(this);
+        this.getTokenURI = this.getTokenURI.bind(this);
         this.isValidDID = this.isValidDID.bind(this);
     }
 
@@ -68,6 +69,9 @@ class IdentityController {
                 `Identity created successfully via ModeratorControl: Tx ${result.transactionHash}`,
             );
 
+            // Get the NFT contract address
+            const contractAddress = blockchainService.getContract('DigitalIdentityNFT').address;
+            
             res.status(201).json({
                 success: true,
                 message: 'Identity creation initiated successfully.',
@@ -76,6 +80,10 @@ class IdentityController {
                     did,
                     transactionHash: result.transactionHash,
                     blockNumber: result.blockNumber,
+                    metamask: {
+                        importUrl: `/api/identity/metamask-import/${address}`,
+                        message: 'Your Digital Identity NFT has been created. Visit the importUrl to see instructions for adding it to MetaMask.'
+                    }
                 },
             });
         } catch (error) {
@@ -249,6 +257,67 @@ class IdentityController {
                 `Check identity status controller error: ${error.message}`,
             );
             // Handle potential IDENTITY_NOT_FOUND from getIdentity if hasIdentity check fails somehow
+            if (error.code === 'IDENTITY_NOT_FOUND') {
+                next(new NotFoundError(error.message));
+            } else {
+                next(error);
+            }
+        }
+    }
+    
+    /**
+     * Get the NFT token URI for a given Ethereum address
+     * @param {object} req - Express request object
+     * @param {object} res - Express response object
+     * @param {function} next - Express next middleware function
+     */
+    async getTokenURI(req, res, next) {
+        try {
+            const { address } = req.params;
+            
+            if (!address || !ethers.isAddress(address)) {
+                throw new ValidationError(
+                    'Invalid Ethereum address format in URL parameter'
+                );
+            }
+            
+            const tokenURI = await blockchainService.getTokenURI(address);
+            
+            // Parse the base64 JSON to extract metadata
+            const base64Data = tokenURI.replace('data:application/json;base64,', '');
+            const jsonData = JSON.parse(Buffer.from(base64Data, 'base64').toString());
+            
+            // Decode the SVG image from base64 if you want to include it
+            const imageData = jsonData.image.replace('data:image/svg+xml;base64,', '');
+            const svgImage = Buffer.from(imageData, 'base64').toString();
+            
+            // Get contract address and token ID for MetaMask import
+            const identity = await blockchainService.getIdentity(address);
+            const contractAddress = blockchainService.getContract('DigitalIdentityNFT').address;
+            
+            res.json({
+                success: true,
+                data: {
+                    tokenURI,
+                    metadata: jsonData,
+                    image: svgImage,
+                    // MetaMask import details
+                    metamask: {
+                        contractAddress,
+                        tokenId: identity.tokenId,
+                        networkId: process.env.NETWORK_ID || '1337', // Default to local Hardhat network
+                        importInstructions: [
+                            "1. Open MetaMask and click on 'NFTs' tab",
+                            "2. Click 'Import NFTs'",
+                            `3. Enter Contract Address: ${contractAddress}`,
+                            `4. Enter Token ID: ${identity.tokenId}`,
+                            "5. Click 'Add'"
+                        ]
+                    }
+                }
+            });
+        } catch (error) {
+            logger.error(`Get token URI controller error: ${error.message}`);
             if (error.code === 'IDENTITY_NOT_FOUND') {
                 next(new NotFoundError(error.message));
             } else {
