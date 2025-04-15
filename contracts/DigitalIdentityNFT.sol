@@ -244,6 +244,50 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
             identity.recoveryAddress
         );
     }
+    
+    /**
+     * @notice Get formatted identity details with human-readable dates
+     * @dev Returns the identity details with dates in YYYY-MM-DD format
+     * @param tokenId The token identifier
+     * @return did The decentralized identifier of the identity
+     * @return isVerified Whether the identity is verified
+     * @return creationDate The formatted creation date in YYYY-MM-DD format
+     * @return lastUpdate The formatted last update date in YYYY-MM-DD format
+     * @return verificationLevel The verification level as a human-readable string
+     * @return isRecoverable Whether the identity has recovery enabled
+     * @return recoveryAddress The address assigned for recovery
+     * @return lastVerificationDate The formatted date of last verification or "Not verified yet"
+     */
+    function getFormattedIdentityDetails(
+        uint256 tokenId
+    )
+        external
+        view
+        returns (
+            string memory did,
+            bool isVerified,
+            string memory creationDate,
+            string memory lastUpdate,
+            string memory verificationLevel,
+            bool isRecoverable,
+            address recoveryAddress,
+            string memory lastVerificationDate
+        )
+    {
+        require(_exists(tokenId), 'Identity does not exist');
+        Identity storage identity = identities[tokenId];
+
+        return (
+            identity.did,
+            identity.isVerified,
+            _formatTimestamp(identity.creationDate),
+            _formatTimestamp(identity.lastUpdate),
+            _verificationLevelToString(identity.verificationLevel),
+            identity.isRecoverable,
+            identity.recoveryAddress,
+            identity.lastVerificationDate > 0 ? _formatTimestamp(identity.lastVerificationDate) : "Not verified yet"
+        );
+    }
 
     function getMetadata(
         uint256 tokenId,
@@ -388,9 +432,6 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
         string memory levelColor = _getVerificationLevelColor(
             identity.verificationLevel
         );
-        string memory formattedCreationDate = _formatTimestamp(
-            identity.creationDate
-        );
         string memory verifierCountStr = Strings.toString(
             verificationCount[tokenId]
         );
@@ -407,8 +448,8 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
                     '</text>',
                     // Creation Date with modern styling
                     '<rect x="75" y="220" width="200" height="25" rx="5" fill="#f8f9fa" stroke="#e0e0e0" stroke-width="1" />',
-                    '<text x="175" y="237" font-family="Arial, sans-serif" font-size="12" fill="#333333" text-anchor="middle">Created on: ',
-                    formattedCreationDate,
+                    '<text x="175" y="237" font-family="Arial, sans-serif" font-size="12" fill="#333333" text-anchor="middle">Created: ',
+                    _formatTimestamp(identity.creationDate),
                     '</text>',
                     // Recovery status with modern styling
                     '<rect x="75" y="255" width="200" height="25" rx="5" fill="#f8f9fa" stroke="#e0e0e0" stroke-width="1" />',
@@ -472,13 +513,59 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
     /**
      * @notice Format a timestamp into a human-readable date
      * @param timestamp The unix timestamp
-     * @return A formatted date string
+     * @return A formatted date string in YYYY-MM-DD format
      */
     function _formatTimestamp(
         uint256 timestamp
     ) internal pure returns (string memory) {
-        // Simple timestamp conversion - in real app, you'd want a better date formatting
-        return Strings.toString(timestamp);
+        // Converting Unix timestamp to YYYY-MM-DD format
+        // This is a simplified version since Solidity has limited date/time functionality
+        
+        // Get days since January 1, 1970 (Unix epoch)
+        uint256 day = timestamp / 86400; // 86400 seconds in a day
+        
+        // Simplified algorithm to calculate year, month, day
+        uint256 year = 1970;
+        uint256 daysInYear = 365;
+        
+        // Account for leap years
+        while (day > daysInYear) {
+            bool isLeapYear = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
+            daysInYear = isLeapYear ? 366 : 365;
+            if (day >= daysInYear) {
+                day -= daysInYear;
+                year++;
+            }
+        }
+        
+        // Calculate month and day
+        uint8[12] memory daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        
+        // Adjust February for leap year
+        if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) {
+            daysInMonth[1] = 29;
+        }
+        
+        uint256 month = 0;
+        while (month < 12 && day >= daysInMonth[month]) {
+            day -= daysInMonth[month];
+            month++;
+        }
+        
+        // Add 1 to month (1-based) and day (1-based)
+        month++;
+        day++;
+        
+        // Format as YYYY-MM-DD
+        return string(
+            abi.encodePacked(
+                Strings.toString(year),
+                "-",
+                month < 10 ? string(abi.encodePacked("0", Strings.toString(month))) : Strings.toString(month),
+                "-",
+                day < 10 ? string(abi.encodePacked("0", Strings.toString(day))) : Strings.toString(day)
+            )
+        );
     }
 
     /**

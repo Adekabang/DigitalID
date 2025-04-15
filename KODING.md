@@ -93,8 +93,8 @@ This document provides an overview of all the current features implemented in th
 ## Development Roadmap
 
 ### Phase 1: Integration Layer
-- [ ] Improved date formatting in NFT SVG (urgent)
-- [ ] Enhanced metadata management (urgent)
+- [x] Improved date formatting in NFT SVG (implemented YYYY-MM-DD format)
+- [x] Enhanced metadata management (added formatted identity details endpoint)
 - [ ] SSO/Open API Gateway for third-party platform integration
 - [ ] RESTful/GraphQL endpoints for external systems
 - [ ] Secure API key management system
