@@ -10,6 +10,10 @@ const {
     apiLimiter,
 } = require('./middleware/rate-limit.middleware');
 const logger = require('./utils/logger');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./docs/swagger.json');
+const fs = require('fs');
+const path = require('path');
 
 const dotenv = require('dotenv');
 
@@ -22,8 +26,9 @@ const identityRoutes = require('./routes/identity.routes');
 const reputationRoutes = require('./routes/reputation.routes');
 const moderationRoutes = require('./routes/moderation.routes');
 const systemRoutes = require('./routes/system.routes');
-const appealRoutes = require('./routes/appeal.routes'); // New
-const mfaRoutes = require('./routes/mfa.routes'); // New
+const appealRoutes = require('./routes/appeal.routes');
+const mfaRoutes = require('./routes/mfa.routes');
+const apiGatewayRoutes = require('./routes/api-gateway.routes');
 
 const app = express();
 
@@ -44,14 +49,29 @@ app.get('/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// Documentation endpoints
+app.get('/api-docs/json', (req, res) => {
+    res.json(swaggerDocument);
+});
+
+// Serve Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: "Blockchain Identity System API",
+}));
+
 // API routes with rate limiting
 app.use('/api/auth', authRoutes);
 app.use('/api/identity', apiLimiter, identityRoutes);
 app.use('/api/reputation', apiLimiter, reputationRoutes);
 app.use('/api/moderation', apiLimiter, moderationRoutes);
 app.use('/api/system', apiLimiter, systemRoutes);
-app.use('/api/appeal', apiLimiter, appealRoutes); // New
-app.use('/api/mfa', apiLimiter, mfaRoutes); // New
+app.use('/api/appeal', apiLimiter, appealRoutes);
+app.use('/api/mfa', apiLimiter, mfaRoutes);
+
+// API Gateway routes
+app.use('/gateway', apiLimiter, apiGatewayRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

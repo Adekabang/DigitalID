@@ -1,0 +1,2548 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Blockchain Identity System API",
+    "description": "RESTful API for managing and verifying blockchain-based digital identities",
+    "version": "1.0.0",
+    "contact": {
+      "email": "support@example.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.identity.example.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Authentication operations"
+    },
+    {
+      "name": "Identity",
+      "description": "Identity management operations"
+    },
+    {
+      "name": "Reputation",
+      "description": "Reputation score operations"
+    },
+    {
+      "name": "Moderation",
+      "description": "Moderation and case management operations"
+    },
+    {
+      "name": "Appeal",
+      "description": "Appeal management operations"
+    },
+    {
+      "name": "MFA",
+      "description": "Multi-factor authentication operations"
+    },
+    {
+      "name": "System",
+      "description": "System administration operations"
+    },
+    {
+      "name": "Gateway",
+      "description": "API gateway operations for third-party integration"
+    }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User login with signature",
+        "description": "Authenticate a user with their Ethereum signature",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Refresh authentication token",
+        "description": "Get a new access token using a refresh token",
+        "operationId": "refreshToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User logout",
+        "description": "Logout the current user",
+        "operationId": "logout",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logged out successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/{address}": {
+      "get": {
+        "tags": ["Identity"],
+        "summary": "Get identity details",
+        "description": "Retrieve identity details for a specific Ethereum address",
+        "operationId": "getIdentity",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identity found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/create": {
+      "post": {
+        "tags": ["Identity"],
+        "summary": "Create a new identity",
+        "description": "Create a new digital identity for a user",
+        "operationId": "createIdentity",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIdentityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Identity created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/{tokenId}/token-uri": {
+      "get": {
+        "tags": ["Identity"],
+        "summary": "Get token URI",
+        "description": "Get the NFT token URI for a specific token ID",
+        "operationId": "getTokenURI",
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "description": "Token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token URI retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tokenId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "tokenURI": {
+                          "type": "string",
+                          "example": "data:application/json;base64,..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/{address}/formatted": {
+      "get": {
+        "tags": ["Identity"],
+        "summary": "Get formatted identity details",
+        "description": "Retrieve identity details with formatted dates for a specific Ethereum address",
+        "operationId": "getFormattedIdentity",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identity found with formatted dates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormattedIdentityResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/verify/{address}": {
+      "post": {
+        "tags": ["Identity"],
+        "summary": "Verify identity",
+        "description": "Upgrade the verification level of an identity",
+        "operationId": "verifyIdentity",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["verificationLevel"],
+                "properties": {
+                  "verificationLevel": {
+                    "type": "integer",
+                    "description": "New verification level (1-3)",
+                    "example": 2
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Additional verification metadata",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "verificationMethod": "KYC",
+                      "provider": "IDVerify"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Identity verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                        },
+                        "verificationLevel": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "verificationDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reputation/{address}": {
+      "get": {
+        "tags": ["Reputation"],
+        "summary": "Get reputation",
+        "description": "Get reputation score for a specific address",
+        "operationId": "getReputation",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reputation retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                        },
+                        "score": {
+                          "type": "integer",
+                          "example": 100
+                        },
+                        "isBanned": {
+                          "type": "boolean",
+                          "example": false
+                        },
+                        "lastUpdate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Reputation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reputation/update": {
+      "post": {
+        "tags": ["Reputation"],
+        "summary": "Update reputation",
+        "description": "Update reputation score for a user",
+        "operationId": "updateReputation",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["address", "points"],
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "Ethereum address",
+                    "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                  },
+                  "points": {
+                    "type": "integer",
+                    "description": "Points to add (positive) or subtract (negative)",
+                    "example": 5
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for the update",
+                    "example": "Positive contribution to community"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reputation updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                        },
+                        "newScore": {
+                          "type": "integer",
+                          "example": 105
+                        },
+                        "change": {
+                          "type": "integer",
+                          "example": 5
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moderation/case": {
+      "post": {
+        "tags": ["Moderation"],
+        "summary": "Create moderation case",
+        "description": "Create a new moderation case for a user",
+        "operationId": "createModerationCase",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userAddress", "actionType", "reason"],
+                "properties": {
+                  "userAddress": {
+                    "type": "string",
+                    "description": "Ethereum address of the user",
+                    "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                  },
+                  "actionType": {
+                    "type": "integer",
+                    "description": "Type of moderation action (0=Warning, 1=Temporary Ban, 2=Permanent Ban)",
+                    "example": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for moderation",
+                    "example": "Repeated violations of community guidelines"
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "description": "Evidence supporting the moderation case",
+                    "example": "Multiple reports from users on March 10, 12, and 15"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Moderation case created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "caseId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "userAddress": {
+                          "type": "string",
+                          "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                        },
+                        "actionType": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        },
+                        "moderator": {
+                          "type": "string",
+                          "example": "0x123..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/moderation/case/{caseId}": {
+      "get": {
+        "tags": ["Moderation"],
+        "summary": "Get moderation case",
+        "description": "Get details of a specific moderation case",
+        "operationId": "getModerationCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Moderation case retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "caseId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "userAddress": {
+                          "type": "string",
+                          "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                        },
+                        "actionType": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "reason": {
+                          "type": "string",
+                          "example": "Repeated violations of community guidelines"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        },
+                        "moderator": {
+                          "type": "string",
+                          "example": "0x123..."
+                        },
+                        "isResolved": {
+                          "type": "boolean",
+                          "example": false
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Case not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appeal/submit": {
+      "post": {
+        "tags": ["Appeal"],
+        "summary": "Submit appeal",
+        "description": "Submit an appeal for a moderation case",
+        "operationId": "submitAppeal",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["caseId", "reason"],
+                "properties": {
+                  "caseId": {
+                    "type": "string",
+                    "description": "Moderation case ID",
+                    "example": "1"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Appeal reason",
+                    "example": "Misunderstanding of the situation"
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "description": "Evidence supporting the appeal",
+                    "example": "Screenshots proving innocence"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Appeal submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "appealId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "caseId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "PENDING"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Case not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appeal/{appealId}": {
+      "get": {
+        "tags": ["Appeal"],
+        "summary": "Get appeal",
+        "description": "Get details of a specific appeal",
+        "operationId": "getAppeal",
+        "parameters": [
+          {
+            "name": "appealId",
+            "in": "path",
+            "description": "Appeal ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Appeal retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "appealId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "caseId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "example": "Misunderstanding of the situation"
+                        },
+                        "evidence": {
+                          "type": "string",
+                          "example": "Screenshots proving innocence"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "PENDING"
+                        },
+                        "reviewer": {
+                          "type": "string",
+                          "example": "0x123...",
+                          "nullable": true
+                        },
+                        "reviewNotes": {
+                          "type": "string",
+                          "example": "",
+                          "nullable": true
+                        },
+                        "reviewTimestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": null,
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Appeal not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appeal/review/{appealId}": {
+      "post": {
+        "tags": ["Appeal"],
+        "summary": "Review appeal",
+        "description": "Review and decide on an appeal",
+        "operationId": "reviewAppeal",
+        "parameters": [
+          {
+            "name": "appealId",
+            "in": "path",
+            "description": "Appeal ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["approved", "notes"],
+                "properties": {
+                  "approved": {
+                    "type": "boolean",
+                    "description": "Whether the appeal is approved",
+                    "example": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Review notes",
+                    "example": "Evidence confirms innocence"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Appeal reviewed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "appealId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "APPROVED"
+                        },
+                        "reviewer": {
+                          "type": "string",
+                          "example": "0x123..."
+                        },
+                        "reviewTimestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-16T10:00:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Appeal not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mfa/setup": {
+      "post": {
+        "tags": ["MFA"],
+        "summary": "Set up MFA",
+        "description": "Set up multi-factor authentication for a user",
+        "operationId": "setupMFA",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["method", "identifier"],
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "description": "MFA method type",
+                    "enum": ["authenticator", "sms", "email"],
+                    "example": "authenticator"
+                  },
+                  "identifier": {
+                    "type": "string",
+                    "description": "Phone number for SMS, email address for email, or deviceId for authenticator",
+                    "example": "user@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MFA setup successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "secret": {
+                          "type": "string",
+                          "description": "Secret key for authenticator app",
+                          "example": "JBSWY3DPEHPK3PXP"
+                        },
+                        "qrCode": {
+                          "type": "string",
+                          "description": "QR code data URL for authenticator app",
+                          "example": "data:image/png;base64,..."
+                        },
+                        "recoveryCodes": {
+                          "type": "array",
+                          "description": "Recovery codes for account access",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": ["12345-67890", "abcde-fghij"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mfa/verify": {
+      "post": {
+        "tags": ["MFA"],
+        "summary": "Verify MFA code",
+        "description": "Verify a multi-factor authentication code",
+        "operationId": "verifyMFA",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "MFA verification code",
+                    "example": "123456"
+                  },
+                  "method": {
+                    "type": "string",
+                    "description": "MFA method type",
+                    "enum": ["authenticator", "sms", "email", "recovery"],
+                    "example": "authenticator"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MFA verification successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "verified": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "sessionToken": {
+                          "type": "string",
+                          "description": "Session token for MFA verified session",
+                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/identity/{address}": {
+      "get": {
+        "tags": ["Gateway"],
+        "summary": "Get identity via gateway",
+        "description": "Gateway endpoint to retrieve identity information for third-party integration",
+        "operationId": "gatewayGetIdentity",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identity found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayIdentityResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - API key invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/reputation/{address}": {
+      "get": {
+        "tags": ["Gateway"],
+        "summary": "Get reputation via gateway",
+        "description": "Gateway endpoint to retrieve reputation information for third-party integration",
+        "operationId": "gatewayGetReputation",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reputation found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayReputationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Reputation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - API key invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/authenticate": {
+      "post": {
+        "tags": ["Gateway"],
+        "summary": "Authenticate via gateway",
+        "description": "Gateway endpoint for third-party authentication",
+        "operationId": "gatewayAuthenticate",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GatewayAuthRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayAuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gateway/status": {
+      "get": {
+        "tags": ["Gateway"],
+        "summary": "Get gateway status",
+        "description": "Check the status of the gateway API",
+        "operationId": "gatewayStatus",
+        "responses": {
+          "200": {
+            "description": "Gateway status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "example": "operational"
+                        },
+                        "version": {
+                          "type": "string",
+                          "example": "1.0.0"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "System health check",
+        "description": "Check the health status of the system",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "System is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "healthy"
+                    },
+                    "blockchain": {
+                      "type": "string",
+                      "example": "connected"
+                    },
+                    "currentBlock": {
+                      "type": "integer",
+                      "example": 12345678
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-03-15T14:30:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "System is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/stats": {
+      "get": {
+        "tags": ["System"],
+        "summary": "System statistics",
+        "description": "Get system-wide statistics",
+        "operationId": "getSystemStats",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "System statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalIdentitiesMinted": {
+                          "type": "string",
+                          "example": "1000"
+                        },
+                        "totalModerationCases": {
+                          "type": "string",
+                          "example": "50"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/apikeys": {
+      "post": {
+        "tags": ["System"],
+        "summary": "Generate API key",
+        "description": "Generate a new API key for third-party integration",
+        "operationId": "generateApiKey",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["clientId", "clientName"],
+                "properties": {
+                  "clientId": {
+                    "type": "string",
+                    "description": "Client identifier",
+                    "example": "client-123"
+                  },
+                  "clientName": {
+                    "type": "string",
+                    "description": "Client name",
+                    "example": "Test Client"
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "description": "Permission strings",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": ["identity.read", "reputation.read"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "API key generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "apiKey": {
+                          "type": "string",
+                          "example": "f8d132e7c5884a6d89f55f1e77248e1f"
+                        },
+                        "clientId": {
+                          "type": "string",
+                          "example": "client-123"
+                        },
+                        "clientName": {
+                          "type": "string",
+                          "example": "Test Client"
+                        },
+                        "permissions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": ["identity.read", "reputation.read"]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2023-03-15T14:30:00Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["System"],
+        "summary": "Deactivate API key",
+        "description": "Deactivate an existing API key",
+        "operationId": "deactivateApiKey",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["apiKey"],
+                "properties": {
+                  "apiKey": {
+                    "type": "string",
+                    "description": "API key to deactivate",
+                    "example": "f8d132e7c5884a6d89f55f1e77248e1f"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "API key deactivated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "API key deactivated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/apikeys/{clientId}": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get client API keys",
+        "description": "Get all API keys for a specific client",
+        "operationId": "getClientApiKeys",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "path",
+            "description": "Client identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API keys retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "clientId": {
+                          "type": "string",
+                          "example": "client-123"
+                        },
+                        "keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string",
+                                "example": "f8d132e7..."
+                              },
+                              "active": {
+                                "type": "boolean",
+                                "example": true
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2023-03-15T14:30:00Z"
+                              },
+                              "permissions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "example": ["identity.read", "reputation.read"]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/devkey": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get development API key",
+        "description": "Generate a new API key for development purposes (only available in development environment)",
+        "operationId": "getDevKey",
+        "responses": {
+          "200": {
+            "description": "API key generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Development API key generated"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "apiKey": {
+                          "type": "string",
+                          "example": "f8d132e7c5884a6d89f55f1e77248e1f"
+                        },
+                        "note": {
+                          "type": "string",
+                          "example": "This key is for development purposes only and will be lost when the server restarts"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden in production",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["signature", "address", "timestamp"],
+        "properties": {
+          "signature": {
+            "type": "string",
+            "description": "Ethereum signature of the message",
+            "example": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1b"
+          },
+          "address": {
+            "type": "string",
+            "description": "Ethereum address of the user",
+            "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp for the signature (within 5 minutes)",
+            "example": 1678897200
+          }
+        }
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh token obtained from login",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "accessToken": {
+                "type": "string",
+                "description": "JWT access token",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              },
+              "refreshToken": {
+                "type": "string",
+                "description": "JWT refresh token",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              }
+            }
+          }
+        }
+      },
+      "IdentityResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "tokenId": {
+                "type": "string",
+                "description": "NFT token ID",
+                "example": "1"
+              },
+              "owner": {
+                "type": "string",
+                "description": "Ethereum address of the owner",
+                "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "did": {
+                "type": "string",
+                "description": "Decentralized identifier",
+                "example": "did:eth:0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "creationDate": {
+                "type": "string",
+                "description": "Unix timestamp of creation",
+                "example": "1678897200"
+              },
+              "lastUpdate": {
+                "type": "string",
+                "description": "Unix timestamp of last update",
+                "example": "1678983600"
+              },
+              "verificationLevel": {
+                "type": "integer",
+                "description": "Verification level (0-3)",
+                "example": 2
+              },
+              "isRecoverable": {
+                "type": "boolean",
+                "description": "Whether the identity is recoverable",
+                "example": true
+              },
+              "recoveryAddress": {
+                "type": "string",
+                "description": "Recovery address if set",
+                "example": "0x123ABC..."
+              },
+              "lastVerificationDate": {
+                "type": "string",
+                "description": "Unix timestamp of last verification",
+                "example": "1678983600"
+              }
+            }
+          }
+        }
+      },
+      "FormattedIdentityResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "tokenId": {
+                "type": "string",
+                "description": "NFT token ID",
+                "example": "1"
+              },
+              "owner": {
+                "type": "string",
+                "description": "Ethereum address of the owner",
+                "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "did": {
+                "type": "string",
+                "description": "Decentralized identifier",
+                "example": "did:eth:0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "creationDate": {
+                "type": "string",
+                "format": "date",
+                "description": "Formatted creation date",
+                "example": "2023-03-15"
+              },
+              "lastUpdate": {
+                "type": "string",
+                "format": "date",
+                "description": "Formatted last update date",
+                "example": "2023-03-16"
+              },
+              "verificationLevel": {
+                "type": "string",
+                "description": "Verification level as string",
+                "example": "KYC VERIFIED"
+              },
+              "isRecoverable": {
+                "type": "boolean",
+                "description": "Whether the identity is recoverable",
+                "example": true
+              },
+              "recoveryAddress": {
+                "type": "string",
+                "description": "Recovery address if set",
+                "example": "0x123ABC..."
+              },
+              "lastVerificationDate": {
+                "type": "string",
+                "format": "date",
+                "description": "Formatted last verification date",
+                "example": "2023-03-16"
+              }
+            }
+          }
+        }
+      },
+      "CreateIdentityRequest": {
+        "type": "object",
+        "required": ["userAddress", "did"],
+        "properties": {
+          "userAddress": {
+            "type": "string",
+            "description": "Ethereum address of the user",
+            "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+          },
+          "did": {
+            "type": "string",
+            "description": "Decentralized identifier",
+            "example": "did:eth:0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional metadata key-value pairs",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "name": "John Doe",
+              "email": "john@example.com"
+            }
+          }
+        }
+      },
+      "GatewayIdentityResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "description": "Ethereum address",
+                "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "did": {
+                "type": "string",
+                "description": "Decentralized identifier",
+                "example": "did:eth:0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "verificationLevel": {
+                "type": "integer",
+                "description": "Verification level (0-3)",
+                "example": 2
+              },
+              "creationDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Creation date",
+                "example": "2023-03-15T14:30:00Z"
+              },
+              "isVerified": {
+                "type": "boolean",
+                "description": "Whether the identity is verified",
+                "example": true
+              },
+              "recoverable": {
+                "type": "boolean",
+                "description": "Whether the identity is recoverable",
+                "example": true
+              }
+            }
+          }
+        }
+      },
+      "GatewayReputationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "description": "Ethereum address",
+                "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "score": {
+                "type": "integer",
+                "description": "Reputation score",
+                "example": 100
+              },
+              "lastUpdate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Last update time",
+                "example": "2023-03-15T14:30:00Z"
+              },
+              "history": {
+                "type": "array",
+                "description": "Score history",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-03-15T14:30:00Z"
+                    },
+                    "score": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "reason": {
+                      "type": "string",
+                      "example": "Initial score"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "GatewayAuthRequest": {
+        "type": "object",
+        "required": ["address", "signature", "message", "timestamp"],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Ethereum address",
+            "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Ethereum signature",
+            "example": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1b"
+          },
+          "message": {
+            "type": "string",
+            "description": "Message that was signed",
+            "example": "Authenticate to Identity System: 1678897200"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp (within 5 minutes)",
+            "example": 1678897200
+          }
+        }
+      },
+      "GatewayAuthResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "description": "Ethereum address",
+                "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+              },
+              "authenticated": {
+                "type": "boolean",
+                "description": "Authentication result",
+                "example": true
+              },
+              "identity": {
+                "type": "object",
+                "properties": {
+                  "did": {
+                    "type": "string",
+                    "example": "did:eth:0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+                  },
+                  "verificationLevel": {
+                    "type": "integer",
+                    "example": 2
+                  },
+                  "isVerified": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "reputation": {
+                "type": "object",
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "example": 100
+                  }
+                }
+              },
+              "timestamp": {
+                "type": "integer",
+                "description": "Unix timestamp",
+                "example": 1678897200
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Invalid signature"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code (optional)",
+            "example": "INVALID_SIGNATURE"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Authorization header using the Bearer scheme"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for gateway access"
+      }
+    }
+  }
+}
