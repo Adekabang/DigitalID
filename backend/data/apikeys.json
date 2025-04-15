@@ -15,6 +15,57 @@
         "limit": 100,
         "interval": 60000
       }
+    },
+    {
+      "key": "d92c487cba75fce0f56585b33cc10b3c6ec1283bb6eab83672077a2417fe0077",
+      "clientId": "demo-app-123",
+      "clientName": "Demo App",
+      "permissions": [
+        "identity.read",
+        "reputation.read",
+        "authentication"
+      ],
+      "active": true,
+      "createdAt": "2025-04-15T04:22:16.230Z",
+      "expiresAt": "2025-05-15T04:22:16.230Z",
+      "rateLimit": {
+        "limit": 100,
+        "interval": 60000
+      }
+    },
+    {
+      "key": "06a16a2f459bc36a4e666ff9c8aa0287fe6bc13998595a87153e05bdecbae8ba",
+      "clientId": "dev-client-1744690976249",
+      "clientName": "Development Client",
+      "permissions": [
+        "identity.read",
+        "reputation.read",
+        "authentication"
+      ],
+      "active": true,
+      "createdAt": "2025-04-15T04:22:56.249Z",
+      "expiresAt": "2025-04-16T04:22:56.249Z",
+      "rateLimit": {
+        "limit": 100,
+        "interval": 60000
+      }
+    },
+    {
+      "key": "9145274d9ec8a87874446681596cf65df10931bbc11be9f2a344c09d7364c8eb",
+      "clientId": "dev-client-1744691356444",
+      "clientName": "Development Client",
+      "permissions": [
+        "identity.read",
+        "reputation.read",
+        "authentication"
+      ],
+      "active": true,
+      "createdAt": "2025-04-15T04:29:16.445Z",
+      "expiresAt": "2025-04-16T04:29:16.445Z",
+      "rateLimit": {
+        "limit": 100,
+        "interval": 60000
+      }
     }
   ],
   "logs": [
@@ -35,6 +86,132 @@
           "limit": 100,
           "interval": 60000
         }
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:22:16.230Z",
+      "apiKey": "d92c487c...",
+      "clientId": "demo-app-123",
+      "event": "key_generated",
+      "details": {
+        "clientId": "demo-app-123",
+        "clientName": "Demo App",
+        "permissions": [
+          "identity.read",
+          "reputation.read",
+          "authentication"
+        ],
+        "expiresAt": "2025-05-15T04:22:16.230Z",
+        "rateLimit": {
+          "limit": 100,
+          "interval": 60000
+        }
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:22:56.249Z",
+      "apiKey": "06a16a2f...",
+      "clientId": "dev-client-1744690976249",
+      "event": "key_generated",
+      "details": {
+        "clientId": "dev-client-1744690976249",
+        "clientName": "Development Client",
+        "permissions": [
+          "identity.read",
+          "reputation.read",
+          "authentication"
+        ],
+        "expiresAt": "2025-04-16T04:22:56.249Z",
+        "rateLimit": {
+          "limit": 100,
+          "interval": 60000
+        }
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:29:08.067Z",
+      "apiKey": "06a16a2f...",
+      "clientId": "dev-client-1744690976249",
+      "event": "api_request",
+      "details": {
+        "endpoint": "/gateway/sso/authorize",
+        "method": "POST",
+        "ip": "::1"
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:29:16.445Z",
+      "apiKey": "9145274d...",
+      "clientId": "dev-client-1744691356444",
+      "event": "key_generated",
+      "details": {
+        "clientId": "dev-client-1744691356444",
+        "clientName": "Development Client",
+        "permissions": [
+          "identity.read",
+          "reputation.read",
+          "authentication"
+        ],
+        "expiresAt": "2025-04-16T04:29:16.445Z",
+        "rateLimit": {
+          "limit": 100,
+          "interval": 60000
+        }
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:36:15.454Z",
+      "apiKey": "9145274d...",
+      "clientId": "dev-client-1744691356444",
+      "event": "api_request",
+      "details": {
+        "endpoint": "/gateway/sso/authorize",
+        "method": "POST",
+        "ip": "::1"
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:36:15.509Z",
+      "apiKey": "9145274d...",
+      "clientId": "dev-client-1744691356444",
+      "event": "api_request",
+      "details": {
+        "endpoint": "/gateway/sso/token",
+        "method": "POST",
+        "ip": "::1"
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:38:45.381Z",
+      "apiKey": "9145274d...",
+      "clientId": "dev-client-1744691356444",
+      "event": "api_request",
+      "details": {
+        "endpoint": "/gateway/sso/authorize",
+        "method": "POST",
+        "ip": "::1"
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:38:45.446Z",
+      "apiKey": "9145274d...",
+      "clientId": "dev-client-1744691356444",
+      "event": "api_request",
+      "details": {
+        "endpoint": "/gateway/sso/token",
+        "method": "POST",
+        "ip": "::1"
+      }
+    },
+    {
+      "timestamp": "2025-04-15T04:39:08.476Z",
+      "apiKey": "9145274d...",
+      "clientId": "dev-client-1744691356444",
+      "event": "api_request",
+      "details": {
+        "endpoint": "/gateway/sso/authorize",
+        "method": "POST",
+        "ip": "::1"
       }
     }
   ]

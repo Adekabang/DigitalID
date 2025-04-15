@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo App - Sign in with Blockchain Identity</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #4a6cfc;
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        .logo svg {
+            margin-right: 10px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            padding: 30px;
+            margin: 20px 0;
+            max-width: 500px;
+            margin: 50px auto;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 24px;
+        }
+        .login-options {
+            margin-top: 30px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .blockchain-btn {
+            background-color: #4a6cfc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .blockchain-btn:hover {
+            background-color: #3a5cf2;
+        }
+        .blockchain-btn svg {
+            margin-right: 10px;
+        }
+        .traditional-btn {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        .traditional-btn:hover {
+            background-color: #d9dcdf;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .divider span {
+            padding: 0 10px;
+            color: #888;
+            font-size: 14px;
+        }
+        #user-info {
+            display: none;
+            margin-top: 20px;
+        }
+        .profile-card {
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: #4a6cfc;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        .profile-details {
+            margin-top: 15px;
+        }
+        .profile-details p {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .profile-details .label {
+            color: #888;
+            font-size: 14px;
+        }
+        .profile-details .value {
+            font-weight: 500;
+            word-break: break-all;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-unverified {
+            background-color: #e9ecef;
+            color: #666;
+        }
+        .badge-verified {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .badge-kyc {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        .badge-full {
+            background-color: #4a6cfc;
+            color: white;
+        }
+        .badge-banned {
+            background-color: #dc3545;
+            color: white;
+        }
+        .badge-active {
+            background-color: #28a745;
+            color: white;
+        }
+        .logout-btn {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+        }
+        .logout-btn:hover {
+            background-color: #e9ecef;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4a6cfc;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        #truncated-address, #truncated-did {
+            display: inline-block;
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Demo App
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card" id="login-card">
+            <h2>Welcome to Demo App</h2>
+            <p>This demo showcases integration with the Blockchain Identity System. Sign in using your blockchain identity to view your profile information.</p>
+            
+            <div class="login-options">
+                <button id="blockchain-login-btn" class="blockchain-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V19C21 20.1046 20.1046 21 19 21Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 7L17 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 17L17 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Sign in with Blockchain Identity
+                </button>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
+                <button class="traditional-btn">
+                    Continue with Email
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <span>Connecting to your wallet...</span>
+            </div>
+
+            <div class="error" id="error-message">
+                Error connecting to wallet. Please make sure MetaMask is installed and try again.
+            </div>
+        </div>
+
+        <div class="card" id="user-info">
+            <h2>Your Blockchain Identity</h2>
+            
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar">ID</div>
+                    <div>
+                        <h3 id="username">Blockchain User</h3>
+                        <div id="verification-badge" class="badge badge-unverified">Unverified</div>
+                    </div>
+                </div>
+
+                <div class="profile-details">
+                    <p>
+                        <span class="label">Ethereum Address</span>
+                        <span class="value" id="user-address">0x0000000000000000000000000000000000000000</span>
+                    </p>
+                    <p>
+                        <span class="label">DID</span>
+                        <span class="value" id="user-did">did:ethr:0x0000000000000000000000000000000000000000</span>
+                    </p>
+                    <p>
+                        <span class="label">Verification Level</span>
+                        <span class="value" id="verification-level">0</span>
+                    </p>
+                    <p>
+                        <span class="label">Reputation Score</span>
+                        <span class="value" id="reputation-score">100</span>
+                    </p>
+                </div>
+            </div>
+
+            <button id="logout-btn" class="logout-btn">Sign Out</button>
+        </div>
+    </div>
+
+    <script src="/js/blockchain-auth-client.js"></script>
+    <script>
+        // Real blockchain identity service integration
+        class BlockchainAuthDemo {
+            constructor() {
+                this.apiEndpoint = 'http://localhost:3000';
+                this.clientId = 'demo-app-123';
+                this.redirectUri = window.location.origin + '/callback';
+                this.apiKey = 'YOUR_API_KEY_HERE'; // ⚠️ This would be handled server-side in production
+                
+                // Bind methods
+                this.init = this.init.bind(this);
+                this.startLogin = this.startLogin.bind(this);
+                this.displayUserInfo = this.displayUserInfo.bind(this);
+                this.fetchUserInfo = this.fetchUserInfo.bind(this);
+                this.logout = this.logout.bind(this);
+            }
+
+            init() {
+                // Add click listener to the login button
+                const loginBtn = document.getElementById('blockchain-login-btn');
+                if (loginBtn) {
+                    loginBtn.addEventListener('click', this.startLogin);
+                }
+                
+                // Add click listener to the logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', this.logout);
+                }
+                
+                // Start loading indicator
+                document.getElementById('loading').style.display = 'block';
+                
+                // Check for login=success parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const loginSuccess = urlParams.get('login');
+                
+                if (loginSuccess === 'success') {
+                    // Remove query parameter from URL to prevent bookmarking issues
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Fetch user info after successful login
+                    this.fetchUserInfo();
+                } else {
+                    // Check if there's an existing session
+                    this.checkExistingSession();
+                }
+            }
+            
+            async checkExistingSession() {
+                try {
+                    const response = await fetch('/api/session');
+                    const data = await response.json();
+                    
+                    if (data.success && data.isAuthenticated) {
+                        console.log('Found existing session, loading user profile');
+                        this.fetchUserInfo();
+                    } else {
+                        // No session, hide loading indicator
+                        document.getElementById('loading').style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error checking session:', error);
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+
+            startLogin() {
+                // Show loading state
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error-message').style.display = 'none';
+                
+                // Check if Web3 (MetaMask) is available
+                if (window.ethereum) {
+                    // Request accounts from MetaMask
+                    window.ethereum.request({ method: 'eth_requestAccounts' })
+                        .then(accounts => {
+                            const address = accounts[0];
+                            if (!address) {
+                                throw new Error('No account selected');
+                            }
+                            
+                            // Generate timestamp for message
+                            const timestamp = Math.floor(Date.now() / 1000).toString();
+                            
+                            // Create message to sign
+                            const message = `Login to ${this.clientId} with timestamp: ${timestamp}`;
+                            
+                            // Request signature
+                            return window.ethereum.request({
+                                method: 'personal_sign',
+                                params: [message, address]
+                            }).then(signature => {
+                                console.log('Signature obtained:', signature);
+                                
+                                // Create payload for the backend
+                                const payload = {
+                                    address,
+                                    signature,
+                                    timestamp,
+                                    message
+                                };
+                                
+                                console.log('Sending to backend:', payload);
+                                
+                                // Make request to the backend to start OAuth flow
+                                return fetch('/api/start-auth', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(payload)
+                                });
+                            });
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.success) {
+                                throw new Error(data.error || 'Authorization failed');
+                            }
+                            
+                            // Redirect to the authorization URL
+                            window.location.href = data.redirectUrl;
+                        })
+                        .catch(error => {
+                            console.error('Error connecting to wallet:', error);
+                            document.getElementById('loading').style.display = 'none';
+                            document.getElementById('error-message').style.display = 'block';
+                            document.getElementById('error-message').textContent = 
+                                error.message || 'Error connecting to wallet. Please try again.';
+                        });
+                } else {
+                    // No Web3 wallet available
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('error-message').textContent = 
+                        'No Web3 wallet detected. Please install MetaMask or another Web3 wallet to continue.';
+                }
+            }
+
+            async fetchUserInfo() {
+                try {
+                    document.getElementById('loading').style.display = 'block';
+                    
+                    const response = await fetch('/api/user/profile');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch user profile');
+                    }
+                    
+                    const data = await response.json();
+                    if (!data.success) {
+                        throw new Error(data.error || 'Failed to get user data');
+                    }
+                    
+                    // Display the user info
+                    this.displayUserInfo(data.data);
+                } catch (error) {
+                    console.error('Profile fetch error:', error);
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('error-message').textContent = 
+                        error.message || 'Error fetching user profile';
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+
+            displayUserInfo(user) {
+                // Hide login card and show user info card
+                document.getElementById('login-card').style.display = 'none';
+                document.getElementById('user-info').style.display = 'block';
+                
+                // Set user information
+                document.getElementById('user-address').textContent = this.truncateAddress(user.address);
+                document.getElementById('user-address').title = user.address;
+                
+                document.getElementById('user-did').textContent = this.truncateAddress(user.did);
+                document.getElementById('user-did').title = user.did;
+                
+                document.getElementById('verification-level').textContent = user.verification_level;
+                document.getElementById('reputation-score').textContent = user.reputation_score || 'N/A';
+                
+                // Add ban status
+                const banStatus = document.createElement('p');
+                banStatus.innerHTML = `<span class="label">Ban Status</span> <span class="value" id="ban-status">
+                    <span class="badge ${user.is_banned ? 'badge-banned' : 'badge-active'}">${user.is_banned ? 'BANNED' : 'ACTIVE'}</span>
+                </span>`;
+                document.querySelector('.profile-details').appendChild(banStatus);
+                
+                // Set verification badge
+                const verificationBadge = document.getElementById('verification-badge');
+                let badgeClass = 'badge-unverified';
+                let verificationText = 'Unverified';
+                
+                switch (user.verification_level) {
+                    case 1:
+                        badgeClass = 'badge-verified';
+                        verificationText = 'Basic Verified';
+                        break;
+                    case 2:
+                        badgeClass = 'badge-kyc';
+                        verificationText = 'KYC Verified';
+                        break;
+                    case 3:
+                        badgeClass = 'badge-full';
+                        verificationText = 'Fully Verified';
+                        break;
+                }
+                
+                verificationBadge.className = `badge ${badgeClass}`;
+                verificationBadge.textContent = verificationText;
+            }
+
+            async logout() {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Logout failed');
+                    }
+                    
+                    // Hide user info and show login screen
+                    document.getElementById('user-info').style.display = 'none';
+                    document.getElementById('login-card').style.display = 'block';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error during logout: ' + error.message);
+                }
+            }
+
+            truncateAddress(address) {
+                if (!address) return '';
+                return address.slice(0, 6) + '...' + address.slice(-4);
+            }
+        }
+
+        // Initialize the demo
+        const authDemo = new BlockchainAuthDemo();
+        document.addEventListener('DOMContentLoaded', authDemo.init);
+    </script>
+</body>
+</html>

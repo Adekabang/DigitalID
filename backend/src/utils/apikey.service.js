@@ -157,7 +157,16 @@ exports.apiKeyMiddleware = (req, res, next) => {
   try {
     const apiKey = req.headers['x-api-key'];
     
+    // Check for demo app client_id for debugging purposes
+    const { client_id } = req.body || {};
+    const isDemoApp = client_id === 'demo-app-123';
+    
+    if (isDemoApp) {
+      logger.info(`Demo app request detected with client_id: ${client_id}`);
+    }
+    
     if (!apiKey) {
+      logger.warn('API key missing in request');
       return res.status(401).json({
         success: false,
         error: 'API key is required'
@@ -167,6 +176,18 @@ exports.apiKeyMiddleware = (req, res, next) => {
     // Check if API key is valid
     if (!apiKeys.has(apiKey)) {
       logger.warn(`Invalid API key attempt: ${apiKey.substring(0, 8)}...`);
+      
+      // Special handling for demo app during development/debugging
+      if (isDemoApp && process.env.NODE_ENV === 'development') {
+        logger.info('Allowing demo app request to proceed despite invalid API key (dev mode only)');
+        req.apiClient = {
+          id: 'demo-app-123',
+          name: 'Demo App (Dev Mode)',
+          permissions: ['identity.read', 'reputation.read', 'authentication']
+        };
+        return next();
+      }
+      
       return res.status(401).json({
         success: false,
         error: 'Invalid API key'

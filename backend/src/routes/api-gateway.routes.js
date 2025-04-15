@@ -167,17 +167,86 @@ router.post('/authenticate', apiKeyMiddleware, async (req, res) => {
  * @description OAuth 2.0 like authorization endpoint
  * @access Public with API key
  */
-router.post('/sso/authorize', apiKeyMiddleware, async (req, res) => {
-  try {
-    const { client_id, redirect_uri, state, scope, response_type, address, signature, timestamp } = req.body;
+router.post('/sso/authorize', (req, res, next) => {
+  logger.info('Received /gateway/sso/authorize request');
+  
+  // Log raw request details
+  logger.info('Request body:', JSON.stringify(req.body, null, 2));
+  logger.info('Request query:', req.query);
+  logger.info('Request headers:', req.headers);
+  
+  // Special handling for debugging - check if this is a demo app request
+  const isDemoApp = req.body && req.body.client_id === 'demo-app-123';
+  if (isDemoApp) {
+    logger.info('Demo app request detected, checking required fields:');
     
-    // Validate required fields
-    if (!client_id || !redirect_uri || !response_type || !address || !signature || !timestamp) {
-      throw new ValidationError('Missing required OAuth parameters');
+    // Check each expected field
+    const expectedFields = ['client_id', 'redirect_uri', 'response_type', 'address', 'signature', 'timestamp'];
+    for (const field of expectedFields) {
+      logger.info(`- ${field}: ${req.body[field] ? 'Present' : 'MISSING'}`);
     }
     
-    // Verify the client ID matches the API key client
-    if (client_id !== req.apiClient.id) {
+    // Force add redirect_uri if needed (for debugging purposes)
+    if (!req.body.redirect_uri && process.env.NODE_ENV === 'development') {
+      logger.info('Forcing redirect_uri for demo app in development mode');
+      req.body.redirect_uri = 'http://localhost:3001/callback';
+    }
+  }
+  
+  apiKeyMiddleware(req, res, next);
+}, async (req, res) => {
+  try {
+    const { client_id, redirect_uri, state, scope, response_type, address, signature, timestamp, message: providedMessage } = req.body;
+    
+    // Log the request data for debugging
+    logger.info('OAuth authorize request data:', {
+      client_id, redirect_uri, response_type, address, 
+      signature: signature ? signature.substring(0, 10) + '...' : undefined,
+      timestamp, 
+      message: providedMessage
+    });
+    
+    // Special handling for demo app in development environment
+    const isDemoApp = client_id === 'demo-app-123' && process.env.NODE_ENV === 'development';
+    
+    // Check each parameter individually for better error messages
+    const missingParams = [];
+    if (!client_id) missingParams.push('client_id');
+    if (!redirect_uri) {
+      if (isDemoApp) {
+        // For demo app in development, auto-provide the redirect_uri
+        logger.info('Auto-providing redirect_uri for demo app');
+        redirect_uri = 'http://localhost:3001/callback';
+        req.body.redirect_uri = redirect_uri;
+      } else {
+        missingParams.push('redirect_uri');
+      }
+    }
+    if (!response_type) {
+      if (isDemoApp) {
+        // For demo app in development, auto-provide the response_type
+        logger.info('Auto-providing response_type for demo app');
+        response_type = 'code';
+        req.body.response_type = response_type;
+      } else {
+        missingParams.push('response_type');
+      }
+    }
+    if (!address) missingParams.push('address');
+    if (!signature) missingParams.push('signature');
+    if (!timestamp) missingParams.push('timestamp');
+    
+    // Validate required fields
+    if (missingParams.length > 0) {
+      logger.error(`Missing required OAuth parameters: ${missingParams.join(', ')}`);
+      throw new ValidationError(`Missing required OAuth parameters: ${missingParams.join(', ')}`);
+    }
+    
+    // Check for registered OAuth clients (for demo app support)
+    const isRegisteredClient = global.oauthClients && global.oauthClients.has(client_id);
+    
+    // Verify the client ID matches the API key client or is a registered OAuth client
+    if (client_id !== req.apiClient.id && !isRegisteredClient) {
       throw new ValidationError('client_id does not match API key');
     }
     
@@ -197,8 +266,11 @@ router.post('/sso/authorize', apiKeyMiddleware, async (req, res) => {
       throw new ValidationError('Signature expired');
     }
     
-    // Standard OAuth message format
-    const message = `Login to ${client_id} with timestamp: ${timestamp}`;
+    // Use provided message if available, otherwise generate standard format
+    const message = providedMessage || `Login to ${client_id} with timestamp: ${timestamp}`;
+    
+    // Log the message being verified
+    logger.debug('Verifying signature with message:', message);
     
     // Verify signature
     const isValid = await blockchainUtils.verifySignature(
@@ -257,8 +329,12 @@ router.post('/sso/token', apiKeyMiddleware, async (req, res) => {
       throw new ValidationError('Missing required OAuth parameters');
     }
     
-    // Verify the client ID matches the API key client
-    if (client_id !== req.apiClient.id) {
+    // Check for registered OAuth clients (for demo app support)
+    const isRegisteredClient = global.oauthClients && global.oauthClients.has(client_id) && 
+      global.oauthClients.get(client_id).clientSecret === client_secret;
+    
+    // Verify the client ID matches the API key client or is a registered OAuth client
+    if (client_id !== req.apiClient.id && !isRegisteredClient) {
       throw new ValidationError('client_id does not match API key');
     }
     

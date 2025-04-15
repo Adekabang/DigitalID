@@ -93,6 +93,68 @@ process.on('unhandledRejection', (err) => {
     process.exit(1);
 });
 
+// Register demo app OAuth client if in development mode
+if (process.env.NODE_ENV === 'development') {
+    const apiKeyService = require('./utils/apikey.service');
+    
+    // Register the demo app client
+    const demoClient = {
+        clientId: 'demo-app-123',
+        clientName: 'Demo App',
+        clientSecret: 'demo-app-secret-456',
+        redirectUri: 'http://localhost:3001/callback',
+        apiKey: '9145274d9ec8a87874446681596cf65df10931bbc11be9f2a344c09d7364c8eb' // Add it to the client config too
+    };
+    
+    // Force create a specific API key for the demo app
+    logger.info('Registering demo app client with fixed API key');
+    
+    // First, check if the key already exists
+    if (!apiKeyService.apiKeys) {
+        apiKeyService.apiKeys = new Map();
+    }
+    
+    // Add the fixed API key for the demo app
+    apiKeyService.apiKeys.set(demoClient.apiKey, demoClient.clientId);
+    
+    // Add metadata
+    if (!apiKeyService.apiKeyMeta) {
+        apiKeyService.apiKeyMeta = new Map();
+    }
+    
+    apiKeyService.apiKeyMeta.set(demoClient.apiKey, {
+        clientId: demoClient.clientId,
+        clientName: demoClient.clientName,
+        permissions: ['identity.read', 'reputation.read', 'authentication'],
+        active: true,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString(),
+        rateLimit: { limit: 1000, interval: 60000 }
+    });
+    
+    logger.info(`Demo app client registered with API key: ${demoClient.apiKey.substring(0, 8)}...`);
+    
+    // Also register using the normal method as a backup
+    const clientKeys = apiKeyService.getClientApiKeys(demoClient.clientId);
+    if (clientKeys.length === 0) {
+        logger.info('Also registering demo app client with standard method');
+        apiKeyService.generateApiKey(
+            demoClient.clientId,
+            demoClient.clientName,
+            ['identity.read', 'reputation.read', 'authentication'],
+            {
+                expiresIn: 30 * 24 * 60 * 60 * 1000 // 30 days
+            }
+        );
+    }
+    
+    // Store auth codes for the demo app (normally would be in a database)
+    global.oauthClients = global.oauthClients || new Map();
+    global.oauthClients.set(demoClient.clientId, demoClient);
+    
+    logger.info('Demo app client configured for SSO authentication');
+}
+
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

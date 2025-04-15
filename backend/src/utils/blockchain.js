@@ -242,6 +242,103 @@ class BlockchainService {
 
     // --- Identity Methods ---
 
+    /**
+     * Get formatted identity data for a user
+     * @param {string} address - Ethereum address
+     * @returns {Promise<Object>} Formatted identity data
+     */
+    async getIdentityData(address) {
+        try {
+            if (!ethers.isAddress(address)) {
+                throw new Error(`Invalid address format: ${address}`);
+            }
+            
+            // Check if user has an identity
+            const hasIdentity = await this.hasIdentity(address);
+            if (!hasIdentity) {
+                return null;
+            }
+            
+            // Get identity details
+            const identity = await this.getIdentity(address);
+            
+            // Get reputation data
+            let reputation = null;
+            try {
+                reputation = await this.getUserReputation(address);
+            } catch (error) {
+                logger.warn(`Could not get reputation for ${address}: ${error.message}`);
+            }
+            
+            // Format the data
+            return {
+                address,
+                did: identity.did,
+                tokenId: identity.tokenId,
+                verificationLevel: identity.verificationLevel,
+                creationDate: identity.creationDate,
+                lastUpdate: identity.lastUpdate,
+                isRecoverable: identity.isRecoverable,
+                recoveryAddress: identity.recoveryAddress,
+                lastVerificationDate: identity.lastVerificationDate,
+                reputation: reputation ? {
+                    score: reputation.score,
+                    isBanned: reputation.isBanned,
+                    lastUpdate: reputation.lastUpdate
+                } : null
+            };
+        } catch (error) {
+            logger.error(`getIdentityData error for ${address}: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Get formatted reputation data for a user
+     * @param {string} address - Ethereum address
+     * @returns {Promise<Object>} Formatted reputation data
+     */
+    async getReputationData(address) {
+        try {
+            if (!ethers.isAddress(address)) {
+                throw new Error(`Invalid address format: ${address}`);
+            }
+            
+            // Check if user has an identity
+            const hasIdentity = await this.hasIdentity(address);
+            if (!hasIdentity) {
+                return null;
+            }
+            
+            // Get reputation data
+            const reputation = await this.getUserReputation(address);
+            
+            // Get moderation cases if any
+            let cases = [];
+            try {
+                const caseIds = await this.getUserModerationCases(address);
+                if (caseIds && caseIds.length > 0) {
+                    cases = caseIds;
+                }
+            } catch (error) {
+                logger.warn(`Could not get moderation cases for ${address}: ${error.message}`);
+            }
+            
+            // Format the data
+            return {
+                address,
+                score: reputation.score,
+                isBanned: reputation.isBanned,
+                lastUpdate: reputation.lastUpdate,
+                cases,
+                history: [] // This would require additional contract calls to get score history
+            };
+        } catch (error) {
+            logger.error(`getReputationData error for ${address}: ${error.message}`);
+            throw error;
+        }
+    }
+
     async hasIdentity(address) {
         try {
             // Ensure address is valid before calling contract
@@ -582,7 +679,58 @@ class BlockchainService {
         }
     }
 
-    // --- Verification Registry Methods ---
+    // --- Signature Verification Methods ---
+
+/**
+ * Verify a signature against a message and address
+ * @param {string} message - The message that was signed
+ * @param {string} signature - The signature to verify
+ * @param {string} address - The Ethereum address that supposedly signed the message
+ * @returns {Promise<boolean>} True if the signature is valid
+ */
+async verifySignature(message, signature, address) {
+    try {
+        if (!message || !signature || !address) {
+            logger.error('verifySignature missing required parameters');
+            return false;
+        }
+        
+        if (!ethers.isAddress(address)) {
+            logger.error(`Invalid Ethereum address in verifySignature: ${address}`);
+            return false;
+        }
+        
+        // Log parameters for debugging
+        logger.debug('Verifying signature:', { 
+            message, 
+            signature: signature.substring(0, 10) + '...', 
+            address 
+        });
+        
+        try {
+            // Get the address that signed the message
+            const recoveredAddress = ethers.verifyMessage(message, signature);
+            
+            // Check if recovered address matches the expected address
+            const isValid = recoveredAddress.toLowerCase() === address.toLowerCase();
+            
+            logger.debug(`Signature verification result: ${isValid}`, {
+                recoveredAddress,
+                expectedAddress: address
+            });
+            
+            return isValid;
+        } catch (error) {
+            logger.error('Error during signature verification:', error);
+            return false;
+        }
+    } catch (error) {
+        logger.error('verifySignature failed:', error);
+        return false;
+    }
+}
+
+// --- Verification Registry Methods ---
 
     async verifyWithRegistry(user, verificationType, metadata, signature) {
         // Requires VERIFIER_ROLE on VerificationRegistry
@@ -803,6 +951,11 @@ class BlockchainService {
         }
     }
 }
+
+// Add a helper method to validate Ethereum addresses
+BlockchainService.prototype.isValidEthereumAddress = function(address) {
+    return typeof address === 'string' && ethers.isAddress(address);
+};
 
 // Export a singleton instance
 module.exports = new BlockchainService();

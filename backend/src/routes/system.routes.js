@@ -301,17 +301,42 @@ router.get('/apikeys/usage/:apiKey', authMiddleware, requireRoles(['admin']), as
 });
 
 /**
- * @route GET /api/system/apikeys/logs/:clientId?
+ * @route GET /api/system/apikeys/logs
+ * @route GET /api/system/apikeys/logs/:clientId
  * @description Get API key audit logs
  * @access Private (admin only)
  */
-router.get('/apikeys/logs/:clientId?', authMiddleware, requireRoles(['admin']), async (req, res, next) => {
+router.get('/apikeys/logs/:clientId', authMiddleware, requireRoles(['admin']), async (req, res, next) => {
     try {
         const { clientId } = req.params;
         const { limit } = req.query;
         
         // Get API key audit logs
         const logs = apiKeyService.getApiKeyAuditLogs(clientId, limit ? parseInt(limit) : 100);
+        
+        res.json({
+            success: true,
+            data: {
+                logs
+            }
+        });
+    } catch (error) {
+        logger.error('API key audit logs retrieval error:', error);
+        next(error);
+    }
+});
+
+/**
+ * @route GET /api/system/apikeys/logs
+ * @description Get all API key audit logs
+ * @access Private (admin only)
+ */
+router.get('/apikeys/logs', authMiddleware, requireRoles(['admin']), async (req, res, next) => {
+    try {
+        const { limit } = req.query;
+        
+        // Get all API key audit logs (no clientId filter)
+        const logs = apiKeyService.getApiKeyAuditLogs(null, limit ? parseInt(limit) : 100);
         
         res.json({
             success: true,
