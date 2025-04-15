@@ -11,7 +11,9 @@ This document provides an overview of all the current features implemented in th
 - [x] Modern SVG-based visualization with automatic word-wrapping for DIDs
 - [x] Different verification levels (Unverified, Basic, KYC, Full)
 - [x] On-chain metadata and NFT image generation
-- [x] Multi-verifier approval system for KYC & higher levels (requires 2+ verifiers)
+- [x] Multi-verifier security feature for KYC & higher levels (requires 2+ different verifiers)
+- [x] Verification level upgrade protection with multiple verifier check
+- [x] Verification count tracking per identity token
 - [x] Recovery mechanism for identity recovery
 - [x] Restricted transfer capabilities (only via recovery mechanism)
 
@@ -102,11 +104,14 @@ This document provides an overview of all the current features implemented in th
 - [x] Comprehensive API documentation with Swagger UI
 
 ### Phase 2: Off-Chain Oracle Implementation
-- [ ] Build secure off-chain oracle service
-- [ ] Implement KYC verification bridges
+- [x] Build secure off-chain oracle service
+- [x] Implement KYC verification bridges
+- [x] Set up automated blockchain event triggers
+- [x] Implement multi-verifier security flow in Oracle service
+- [x] Create comprehensive verification flow documentation
+- [x] Implement manual and API-based testing scripts for verification
 - [ ] Develop reporting module interfaces
 - [ ] Create incident verification system
-- [ ] Set up automated blockchain event triggers
 
 ### Phase 3: User Interfaces
 - [ ] User registration and dashboard portal

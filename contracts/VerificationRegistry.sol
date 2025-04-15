@@ -47,6 +47,15 @@ contract VerificationRegistry is AccessControl, Pausable {
         string details;
     }
 
+    // Pending Verification struct
+    struct PendingVerification {
+        address user;
+        VerificationType verificationType;
+        string metadata;
+        uint256 requestTimestamp;
+        uint256 status; // 0 = Pending, 1 = Approved, 2 = Rejected
+    }
+
     // Mappings
     mapping(address => mapping(VerificationType => VerificationStatus))
         public verifications;
@@ -54,6 +63,11 @@ contract VerificationRegistry is AccessControl, Pausable {
     mapping(address => mapping(address => bool)) public isRecoveryContact;
     mapping(address => VerificationAttempt[]) public verificationHistory;
     mapping(address => mapping(bytes32 => bool)) public usedSignatures;
+    
+    // Pending verifications tracking
+    mapping(uint256 => PendingVerification) public pendingVerifications;
+    uint256 public nextVerificationId = 1;
+    uint256[] public pendingVerificationIds;
 
     // Recovery request
     struct RecoveryRequest {
@@ -68,6 +82,12 @@ contract VerificationRegistry is AccessControl, Pausable {
     mapping(bytes32 => RecoveryRequest) public recoveryRequests;
 
     // Events
+    event VerificationRequested(
+        address indexed user,
+        uint256 indexed verificationId,
+        VerificationType verificationType,
+        string metadata
+    );
     event VerificationCompleted(
         address indexed user,
         VerificationType verificationType,
@@ -107,6 +127,50 @@ contract VerificationRegistry is AccessControl, Pausable {
     }
 
     // Verification Functions
+    function requestVerification(
+        VerificationType verificationType,
+        string memory metadata,
+        bytes memory signature
+    ) external whenNotPaused {
+        address user = msg.sender;
+        require(
+            digitalIdentity.hasIdentity(user),
+            'User must have digital identity'
+        );
+
+        // Verify signature if provided (for future use)
+        if (signature.length > 0) {
+            bytes32 messageHash = keccak256(
+                abi.encodePacked(user, uint256(verificationType), metadata)
+            );
+            bytes32 signedHash = messageHash.toEthSignedMessageHash();
+            require(
+                !usedSignatures[user][signedHash],
+                'Signature already used'
+            );
+            usedSignatures[user][signedHash] = true;
+        }
+
+        // Create new verification request
+        uint256 verificationId = nextVerificationId;
+        nextVerificationId++;
+
+        // Store the pending verification
+        pendingVerifications[verificationId] = PendingVerification({
+            user: user,
+            verificationType: verificationType,
+            metadata: metadata,
+            requestTimestamp: block.timestamp,
+            status: 0 // Pending
+        });
+
+        // Track pending verification ID
+        pendingVerificationIds.push(verificationId);
+
+        // Emit event for oracle to pick up
+        emit VerificationRequested(user, verificationId, verificationType, metadata);
+    }
+
     function verify(
         address user,
         VerificationType verificationType,
@@ -150,6 +214,45 @@ contract VerificationRegistry is AccessControl, Pausable {
 
         emit VerificationCompleted(user, verificationType, true);
         emit VerificationAttemptLogged(user, verificationType, true);
+    }
+
+    // Oracle callback function for verification confirmation
+    function confirmVerification(
+        uint256 verificationId,
+        bool isVerified,
+        string memory resultMetadata
+    ) external onlyRole(VERIFIER_ROLE) whenNotPaused {
+        // Get the pending verification
+        PendingVerification storage verification = pendingVerifications[verificationId];
+        
+        // Ensure verification exists and is still pending
+        require(verification.user != address(0), "Verification not found");
+        require(verification.status == 0, "Verification not pending");
+
+        // Update status based on verification result
+        verification.status = isVerified ? 1 : 2; // 1 = Approved, 2 = Rejected
+
+        if (isVerified) {
+            // Update verification status
+            verifications[verification.user][verification.verificationType] = VerificationStatus({
+                isVerified: true,
+                timestamp: block.timestamp,
+                verifier: msg.sender,
+                metadata: resultMetadata
+            });
+        }
+
+        // Log verification attempt
+        VerificationAttempt memory attempt = VerificationAttempt({
+            timestamp: block.timestamp,
+            success: isVerified,
+            details: resultMetadata
+        });
+        verificationHistory[verification.user].push(attempt);
+
+        // Emit events
+        emit VerificationCompleted(verification.user, verification.verificationType, isVerified);
+        emit VerificationAttemptLogged(verification.user, verification.verificationType, isVerified);
     }
 
     // Recovery Setup Functions
@@ -295,6 +398,44 @@ contract VerificationRegistry is AccessControl, Pausable {
         address user
     ) external view returns (address[] memory) {
         return recoverySettings[user].recoveryContacts;
+    }
+    
+    function getPendingVerificationIds() external view returns (uint256[] memory) {
+        return pendingVerificationIds;
+    }
+    
+    function getPendingVerification(uint256 verificationId) 
+        external view returns (
+            address user,
+            uint8 verificationType,
+            string memory metadata,
+            uint256 requestTimestamp,
+            uint256 status
+        ) 
+    {
+        PendingVerification storage verification = pendingVerifications[verificationId];
+        return (
+            verification.user,
+            uint8(verification.verificationType),
+            verification.metadata,
+            verification.requestTimestamp,
+            verification.status
+        );
+    }
+    
+    // Clean up processed verifications (to save gas)
+    function cleanupProcessedVerifications() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 i = 0;
+        while (i < pendingVerificationIds.length) {
+            uint256 verificationId = pendingVerificationIds[i];
+            if (pendingVerifications[verificationId].status != 0) {
+                // Replace this element with the last one and pop the array
+                pendingVerificationIds[i] = pendingVerificationIds[pendingVerificationIds.length - 1];
+                pendingVerificationIds.pop();
+            } else {
+                i++;
+            }
+        }
     }
 
     // Admin Functions
