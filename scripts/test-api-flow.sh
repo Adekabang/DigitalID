@@ -69,20 +69,50 @@ if [ "$HAS_IDENTITY" == "true" ]; then
 else
   echo "Creating new identity for user with Backend API..."
   
-  # Get authentication token for Backend API (you may need to implement this depending on your auth system)
-  # For simplicity, we're assuming the backend's identity/create endpoint allows public access
-  # or you have implemented the appropriate authentication mechanism
+  # First we need to get an authentication token using the admin wallet address
+  echo "Getting authentication token..."
+
   
-  IDENTITY_RESULT=$(curl -s -X POST "${BACKEND_API}/api/identity/create" \
+  # Using the provided admin wallet with fixed signature/timestamp for testing
+  ADMIN_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  TIMESTAMP=1744747814
+  MESSAGE="Authenticate to Identity System: ${TIMESTAMP}"
+  SIGNATURE="0x05b4d56a45b29d629abaa090e7b9bee6f6cf8aa5a83acd55b168b8b7c84b5f847db8b55669d807fa22e7c805984bebb6e8a149d2d50365e02b21d4b1d963a9371c"
+  
+  # Note: This signature was generated with the private key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+  # for the specific timestamp and message above
+  
+  echo "Using admin wallet ${ADMIN_ADDRESS} with timestamp ${TIMESTAMP}"
+  
+  # Get authentication token using admin wallet
+  AUTH_RESULT=$(curl -s -X POST "${BACKEND_API}/api/auth/login" \
     -H "Content-Type: application/json" \
     -d '{
-      "userAddress": "'"${TEST_USER}"'",
-      "did": "did:ethr:'"${TEST_USER}"'",
-      "metadata": {
-        "name": "Test User",
-        "email": "user@example.com",
-        "createdAt": "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'"
-      }
+      "address": "'${ADMIN_ADDRESS}'",
+      "signature": "'${SIGNATURE}'",
+      "timestamp": "'${TIMESTAMP}'"
+    }')
+  
+  # Check if auth was successful
+  AUTH_SUCCESS=$(echo $AUTH_RESULT | jq -r '.success')
+  
+  if [ "$AUTH_SUCCESS" != "true" ]; then
+    echo "❌ ERROR: Authentication failed. Using simulated token for testing..."
+    ACCESS_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZGRyZXNzIjoiMHg3MDk5Nzk3MEM1MTgxMmRjM0EwMTBDN2QwMWI1MGUwZDE3ZGM3OUM4Iiwicm9sZSI6InVzZXIiLCJpYXQiOjE2ODM1NjQ3ODksImV4cCI6MTY4MzY1MTE4OX0.dummy-token-for-testing"
+  else
+    echo "✅ Authentication successful!"
+    ACCESS_TOKEN=$(echo $AUTH_RESULT | jq -r '.data.accessToken')
+  fi
+  
+  echo "Using access token for API calls..."
+  
+  # Now create the identity with the token
+  IDENTITY_RESULT=$(curl -s -X POST "${BACKEND_API}/api/identity/create" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+    -d '{
+      "address": "'${TEST_USER}'",
+      "did": "did:ethr:'${TEST_USER}'"
     }')
   
   echo "$IDENTITY_RESULT" | jq
@@ -156,7 +186,7 @@ if [ "$VERIFICATION_SUCCESS" == "true" ]; then
   VERIFICATION_LEVEL_NAME=$(echo "$VERIFICATION_RESULT" | jq -r '.data.verificationLevelName')
   
   if [ ! -z "$VERIFICATION_LEVEL" ] && [ "$VERIFICATION_LEVEL" != "null" ]; then
-    echo "Current verification level is now: ${VERIFICATION_LEVEL_NAME} (${VERIFICATION_LEVEL})"
+    echo "Current verification level is now: (${VERIFICATION_LEVEL})"
   fi
   
   # Get token ID from the response if available
