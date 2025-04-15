@@ -126,6 +126,15 @@ io.on('connection', (socket) => {
         if (!userData) {
             return;
         }
+        
+        // Check if user is banned (reputation below threshold)
+        if (userData.reputationScore < 50) {
+            // Notify user they are banned
+            socket.emit('error', { 
+                message: 'Your message could not be sent. Your reputation score is too low.'
+            });
+            return;
+        }
 
         // Create message object
         const message = {
@@ -143,6 +152,26 @@ io.on('connection', (socket) => {
 
         // Broadcast to all clients
         io.emit('message', message);
+    });
+    
+    // Handle reputation updates from reports
+    socket.on('reputation_update_request', (data) => {
+        const { userAddress, newReputation } = data;
+        
+        console.log(`Reputation update requested for ${userAddress}: ${newReputation}`);
+        
+        // Notify all clients about reputation update
+        io.emit('reputation_update', {
+            userAddress,
+            newReputation
+        });
+        
+        // Update reputation score for connected user
+        for (const [socketId, userData] of connectedUsers.entries()) {
+            if (userData.address === userAddress) {
+                userData.reputationScore = newReputation;
+            }
+        }
     });
 
     // Handle disconnection
@@ -222,91 +251,15 @@ app.get('/api/messages', (req, res) => {
     });
 });
 
-// Report message
+// Forward API for reports if needed (deprecated - reports now go directly to blockchain identity system)
 app.post('/api/report', async (req, res) => {
     try {
-        const { messageId, reason, userAddress } = req.body;
-        const token = req.headers.authorization?.split(' ')[1];
-
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                error: 'Authentication required',
-            });
-        }
-
-        // Verify token
-        const user = verifyToken(token);
-
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid authentication token',
-            });
-        }
-
-        // Find message
-        const message = messages.find((msg) => msg.id === messageId);
-
-        if (!message) {
-            return res.status(404).json({
-                success: false,
-                error: 'Message not found',
-            });
-        }
-
-        // Call blockchain identity API to update reputation
-        const reputationResponse = await axios.post(
-            `${IDENTITY_API_URL}/reputation/update`,
-            {
-                address: userAddress,
-                points: -10, // Deduct 10 points for harmful content
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            },
-        );
-
-        if (!reputationResponse.data.success) {
-            throw new Error(
-                reputationResponse.data.error || 'Failed to update reputation',
-            );
-        }
-
-        // Get updated reputation
-        const updatedReputation =
-            reputationResponse.data.data.updatedReputation;
-
-        // Notify all clients about reputation update
-        io.emit('reputation_update', {
-            userAddress,
-            newReputation: updatedReputation,
-        });
-
-        // Update reputation score for connected user
-        for (const [socketId, userData] of connectedUsers.entries()) {
-            if (userData.address === userAddress) {
-                userData.reputationScore = updatedReputation;
-            }
-        }
-
-        // Log report
-        console.log(
-            `Report received: Message ${messageId} reported by ${user.address} for reason: ${reason}`,
-        );
-
-        res.json({
-            success: true,
-            message: 'Report submitted successfully',
-            data: {
-                updatedReputation,
-            },
+        res.status(410).json({
+            success: false,
+            error: 'This endpoint is deprecated. Reports should be sent directly to the blockchain identity system moderation API.',
         });
     } catch (error) {
         console.error('Error processing report:', error);
-
         res.status(500).json({
             success: false,
             error: error.message || 'Internal server error',

@@ -32,7 +32,14 @@
             </div>
 
             <div id="chat-section" class="hidden">
-                <div id="reputation-badge"></div>
+                <div id="user-info-container">
+                    <div id="user-details">
+                        <div id="user-name"></div>
+                        <div id="user-address" class="user-address"></div>
+                        <div id="user-verification" class="user-verification"></div>
+                    </div>
+                    <div id="reputation-badge"></div>
+                </div>
                 <div id="chat-messages"></div>
                 <div id="message-input">
                     <textarea
@@ -48,13 +55,22 @@
                     <h3>Report Message</h3>
                     <p>Message: <span id="reported-message"></span></p>
                     <p>From: <span id="reported-user"></span></p>
+                    <p>Wallet: <span id="reported-wallet"></span></p>
                     <label for="report-reason">Reason:</label>
                     <select id="report-reason">
                         <option value="harmful">Harmful Content</option>
                         <option value="spam">Spam</option>
                         <option value="abuse">Abuse/Harassment</option>
+                        <option value="misinformation">Misinformation</option>
+                        <option value="impersonation">Impersonation</option>
                         <option value="other">Other</option>
                     </select>
+                    <textarea 
+                        id="report-details" 
+                        placeholder="Please provide additional details about this report..." 
+                        rows="3" 
+                        style="width: 100%; margin: 10px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                    ></textarea>
                     <div class="modal-buttons">
                         <button id="submit-report">Submit Report</button>
                         <button id="cancel-report">Cancel</button>

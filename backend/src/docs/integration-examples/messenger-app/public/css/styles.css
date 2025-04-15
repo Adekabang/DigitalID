@@ -76,27 +76,111 @@ button:hover {
     max-height: 600px;
 }
 
-#reputation-badge {
-    align-self: flex-end;
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
+#user-info-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0.6rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+#user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.user-address {
     font-size: 0.8rem;
-    margin-bottom: 0.5rem;
+    color: #666;
+    font-family: monospace;
+}
+
+.user-verification {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.user-verification.verified {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+#reputation-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-align: center;
+    min-width: 120px;
 }
 
 .score-high {
     background-color: #27ae60;
     color: white;
+    border-left: 5px solid #219150;
 }
 
 .score-medium {
     background-color: #f39c12;
     color: white;
+    border-left: 5px solid #d98500;
 }
 
 .score-low {
     background-color: #e74c3c;
     color: white;
+    border-left: 5px solid #c0392b;
+}
+
+.badge-title {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.badge-score {
+    font-size: 0.8rem;
+    margin-top: 3px;
+}
+
+/* Style disabled textarea for banned users */
+textarea:disabled {
+    background-color: #f8f8f8;
+    color: #999;
+    border-color: #ddd;
+    cursor: not-allowed;
+}
+
+/* Message reputation badges */
+.reputation-badge {
+    display: inline-block;
+    font-weight: bold;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.reputation-badge.high {
+    background-color: #27ae60;
+    color: white;
+}
+
+.reputation-badge.medium {
+    background-color: #f39c12;
+    color: white;
+}
+
+.reputation-badge.low {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* Verified badge styles */
+.verified-badge {
+    font-weight: bold;
 }
 
 #chat-messages {
@@ -139,6 +223,7 @@ button:hover {
     position: absolute;
     right: 0.5rem;
     top: 0.5rem;
+    z-index: 10;
 }
 
 .message:hover .message-actions {
@@ -146,10 +231,12 @@ button:hover {
 }
 
 .report-btn {
-    background-color: transparent;
+    background-color: #fff;
     color: #e74c3c;
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .report-btn:hover {
