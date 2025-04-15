@@ -261,17 +261,13 @@
                           "type": "string",
                           "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
                         },
-                        "tokenId": {
-                          "type": "string",
-                          "example": "1"
-                        },
-                        "verificationLevel": {
+                        "level": {
                           "type": "integer",
                           "example": 1
                         },
-                        "verificationLevelName": {
+                        "levelName": {
                           "type": "string",
-                          "example": "BASIC_VERIFIED"
+                          "example": "BASIC VERIFIED"
                         }
                       }
                     }
@@ -1240,6 +1236,22 @@
                   }
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    "/docs": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "API Documentation",
+        "description": "View the Swagger UI documentation",
+        "operationId": "getApiDocs",
+        "responses": {
+          "200": {
+            "description": "Swagger UI HTML page",
+            "content": {
+              "text/html": {}
             }
           }
         }

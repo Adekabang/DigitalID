@@ -387,4 +387,4 @@ const expirationTime = Math.floor(Date.now() / 1000) + 31536000;
 await verificationContract.confirmVerification(verificationId, true, resultMetadata, expirationTime);
 ```
 
-When a verification expires, the identity will maintain its verification level until explicitly downgraded or re-verified.
+When a verification expires, the identity will maintain its verification level until explicitly downgraded or re-verified.Oracle API documentation is now available at http://localhost:3030/docs

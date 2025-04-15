@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
+const swaggerUi = require('swagger-ui-express');
 
 const config = require('./config');
 const logger = require('./utils/logger');
@@ -18,11 +19,17 @@ if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
 
+// Load Swagger docs
+const swaggerDocument = JSON.parse(fs.readFileSync(path.join(__dirname, '../docs/swagger.json'), 'utf8'));
+
 // Middleware
 app.use(helmet()); // Security headers
 app.use(cors()); // CORS support
 app.use(express.json()); // Parse JSON requests
 app.use(morgan('combined')); // HTTP request logging
+
+// Serve Swagger docs
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // API routes
 app.use('/api/events', require('./controllers/events.controller'));

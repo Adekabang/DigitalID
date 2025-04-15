@@ -25,10 +25,6 @@ blockchain-identity-system/
 │   ├── ModeratorControl.sol
 │   ├── AppealSystem.sol
 │   └── ...
-├── demo-app/             # Example third-party integration app
-│   ├── index.html
-│   ├── server.js
-│   └── ...
 ├── oracle/               # Off-chain oracle service
 │   ├── abis/           # Contract ABIs
 │   ├── scripts/        # Oracle utility scripts
@@ -89,6 +85,13 @@ Managed and tested using the Hardhat development environment.
 -   Simple example application showing third-party integration with the identity system.
 -   Implements "Sign in with Blockchain Identity" using MetaMask.
 -   Demonstrates OAuth flow and session management.
+
+### Messenger App (`backend/docs/integration-examples/messenger-app/`)
+
+-   A real-time messaging application that uses the blockchain identity system for verification.
+-   Demonstrates how third-party applications can integrate with the identity system.
+-   Shows user verification status and reputation information.
+-   Provides examples of reputation-based access control.
 
 ## Setup & Usage (Combined)
 
@@ -162,6 +165,19 @@ Managed and tested using the Hardhat development environment.
     ```
     _(The demo app will start, typically on port 3050)_
 
+### Messenger App Setup
+
+1.  **Install Messenger App Dependencies:**
+    ```bash
+    cd backend/docs/integration-examples/messenger-app
+    npm i
+    ```
+2.  **Run Messenger App:** (Keep this terminal running)
+    ```bash
+    npm run dev
+    ```
+    _(The messenger app will start, typically on port 3060)_
+
 ### Interacting with the System
 
 -   **Hardhat Tasks:** Use `npx hardhat [task]` for contract compilation, testing, etc.
@@ -200,10 +216,17 @@ Managed and tested using the Hardhat development environment.
     -   Second verifier approval via `/api/verifications/second-approval`
     -   Check verification status via `/api/identity/verificationLevel`
     -   View health status via `/health`
+    -   Access API documentation at `/docs`
 
 -   **Demo App:**
     -   Access the demo app in your browser at `http://localhost:3050`
     -   Connect your MetaMask wallet to test the "Sign in with Blockchain Identity" flow
+
+-   **Messenger App:**
+    -   Access the messenger app in your browser at `http://localhost:3060`
+    -   Connect your MetaMask wallet to login with blockchain identity
+    -   Exchange messages with other verified users
+    -   View user verification status and reputation scores
 
 ## Development Mode
 
@@ -317,6 +340,7 @@ This script demonstrates the complete verification flow including both verifier 
 -   **Oracle:** Test verification flows with the mock KYC provider.
 -   **Integration:** Use the demo app to test the full authentication flow.
 -   **Verification Flow:** Use the test-api-flow.sh script to test the complete verification process.
+-   **Messenger App:** Test real-time messaging between verified users.
 
 ## Documentation
 
@@ -324,4 +348,5 @@ This script demonstrates the complete verification flow including both verifier 
 - **KODING.md** - Development roadmap and feature status
 - **oracle/docs/kyc-integration-guide.md** - Guide for integrating KYC providers with the Oracle
 - **backend/docs/swagger.json** - Backend API documentation in OpenAPI format
+- **oracle/docs/swagger.json** - Oracle API documentation in OpenAPI format 
 - **backend/docs/integration-examples/** - Integration examples for third-party platforms
