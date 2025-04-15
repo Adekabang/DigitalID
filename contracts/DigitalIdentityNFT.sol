@@ -13,6 +13,9 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
 
     bytes32 public constant VERIFIER_ROLE = keccak256('VERIFIER_ROLE');
     bytes32 public constant RECOVERY_ROLE = keccak256('RECOVERY_ROLE');
+    
+    // Error for unauthorized transfer attempts
+    error TransferNotAllowed(uint256 tokenId);
 
     Counters.Counter private _tokenIds;
 
@@ -78,6 +81,35 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
         bytes4 interfaceId
     ) public view virtual override(ERC721, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+    
+    /**
+     * @dev Override the default transfer behavior to restrict transfers
+     * @notice This prevents regular transfer of the NFT
+     */
+    function _transfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override {
+        // Check if the caller is the recovery role contract (for recovery process only)
+        if (!hasRole(RECOVERY_ROLE, msg.sender)) {
+            revert TransferNotAllowed(tokenId);
+        }
+        
+        // If we get here, it's a recovery transfer, so proceed with the normal transfer
+        super._transfer(from, to, tokenId);
+    }
+    
+    /**
+     * @dev Override approval functions to prevent any approvals
+     */
+    function approve(address to, uint256 tokenId) public virtual override {
+        revert TransferNotAllowed(tokenId);
+    }
+    
+    function setApprovalForAll(address operator, bool approved) public virtual override {
+        revert TransferNotAllowed(0); // Using 0 as a generic token ID for the error
     }
 
     // --- Add this view function ---
