@@ -1,0 +1,41 @@
+{
+  "keys": [
+    {
+      "key": "bc75c77777c59160e6ff77d5ac8b15524ce2acd434755bd574f1d0967b50269e",
+      "clientId": "dev-client-1",
+      "clientName": "Development Client",
+      "permissions": [
+        "identity.read",
+        "reputation.read"
+      ],
+      "active": true,
+      "createdAt": "2025-04-15T04:04:14.695Z",
+      "expiresAt": "2025-05-15T04:04:14.695Z",
+      "rateLimit": {
+        "limit": 100,
+        "interval": 60000
+      }
+    }
+  ],
+  "logs": [
+    {
+      "timestamp": "2025-04-15T04:04:14.695Z",
+      "apiKey": "bc75c777...",
+      "clientId": "dev-client-1",
+      "event": "key_generated",
+      "details": {
+        "clientId": "dev-client-1",
+        "clientName": "Development Client",
+        "permissions": [
+          "identity.read",
+          "reputation.read"
+        ],
+        "expiresAt": "2025-05-15T04:04:14.695Z",
+        "rateLimit": {
+          "limit": 100,
+          "interval": 60000
+        }
+      }
+    }
+  ]
+}
