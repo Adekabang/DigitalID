@@ -280,10 +280,10 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
     function _getVerificationLevelColor(
         VerificationLevel level
     ) internal pure returns (string memory) {
-        if (level == VerificationLevel.UNVERIFIED) return '#CCCCCC';
-        if (level == VerificationLevel.BASIC_VERIFIED) return '#66CC77';
-        if (level == VerificationLevel.KYC_VERIFIED) return '#3399FF';
-        if (level == VerificationLevel.FULL_VERIFIED) return '#9966CC';
+        if (level == VerificationLevel.UNVERIFIED) return '#9da3af';
+        if (level == VerificationLevel.BASIC_VERIFIED) return '#4ade80';
+        if (level == VerificationLevel.KYC_VERIFIED) return '#3b82f6';
+        if (level == VerificationLevel.FULL_VERIFIED) return '#8b5cf6';
         return '#FFFFFF';
     }
 
@@ -314,19 +314,32 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
             string(
                 abi.encodePacked(
                     '<svg xmlns="http://www.w3.org/2000/svg" width="350" height="350" viewBox="0 0 350 350">',
-                    '<rect width="100%" height="100%" fill="#f9f9f9" />',
-                    '<rect x="20" y="20" width="310" height="310" rx="15" fill="white" stroke="#333333" stroke-width="2" />',
-                    // Title and border
-                    '<rect x="35" y="35" width="280" height="50" rx="10" fill="#333333" />',
-                    '<text x="175" y="65" font-family="Arial" font-size="20" fill="white" text-anchor="middle" dominant-baseline="middle">DIGITAL IDENTITY</text>',
+                    '<defs>',
+                    '<linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">',
+                    '<stop offset="0%" stop-color="#f8f9fa" />',
+                    '<stop offset="100%" stop-color="#e9ecef" />',
+                    '</linearGradient>',
+                    '</defs>',
+                    '<rect width="100%" height="100%" fill="url(#bgGradient)" />',
+                    '<rect x="20" y="20" width="310" height="310" rx="20" fill="white" stroke="#e0e0e0" stroke-width="2" filter="drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))" />',
+                    // Title and border with modern gradient
+                    '<linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">',
+                    '<stop offset="0%" stop-color="#4361ee" />',
+                    '<stop offset="100%" stop-color="#3a0ca3" />',
+                    '</linearGradient>',
+                    '<rect x="35" y="35" width="280" height="50" rx="10" fill="url(#headerGradient)" />',
+                    '<text x="175" y="65" font-family="Arial, sans-serif" font-weight="bold" font-size="20" fill="white" text-anchor="middle" dominant-baseline="middle">DIGITAL IDENTITY</text>',
                     // DID and Address
-                    '<text x="175" y="105" font-family="Arial" font-size="14" fill="#333333" text-anchor="middle">ID: ',
+                    '<text x="175" y="105" font-family="Arial, sans-serif" font-size="14" fill="#333333" text-anchor="middle">ID: ',
                     Strings.toString(tokenId),
                     '</text>',
-                    '<text x="175" y="125" font-family="Arial" font-size="12" fill="#666666" text-anchor="middle">',
+                    // DID with word-wrap (containing foreignObject to allow text wrapping)
+                    '<foreignObject x="45" y="115" width="260" height="30">',
+                    '<div xmlns="http://www.w3.org/1999/xhtml" style="font-family: Arial, sans-serif; font-size: 12px; color: #666666; text-align: center; overflow-wrap: break-word; word-break: break-all;">',
                     identity.did,
-                    '</text>',
-                    '<text x="175" y="145" font-family="Arial" font-size="12" fill="#666666" text-anchor="middle">Owner: ',
+                    '</div>',
+                    '</foreignObject>',
+                    '<text x="175" y="155" font-family="Arial, sans-serif" font-size="12" fill="#666666" text-anchor="middle">Owner: ',
                     shortAddress,
                     '</text>'
                 )
@@ -353,26 +366,28 @@ contract DigitalIdentityNFT is ERC721, AccessControl, Pausable {
         return
             string(
                 abi.encodePacked(
-                    // Verification Level
-                    '<rect x="75" y="165" width="200" height="40" rx="5" fill="',
+                    // Verification Level with pill-like shape and light shadow
+                    '<rect x="75" y="170" width="200" height="40" rx="20" fill="',
                     levelColor,
-                    '" />',
-                    '<text x="175" y="190" font-family="Arial" font-size="16" fill="white" text-anchor="middle" dominant-baseline="middle">',
+                    '" filter="drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))" />',
+                    '<text x="175" y="195" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="white" text-anchor="middle" dominant-baseline="middle">',
                     levelString,
                     '</text>',
-                    // Creation Date
-                    '<text x="175" y="230" font-family="Arial" font-size="12" fill="#333333" text-anchor="middle">Created on: ',
+                    // Creation Date with modern styling
+                    '<rect x="75" y="220" width="200" height="25" rx="5" fill="#f8f9fa" stroke="#e0e0e0" stroke-width="1" />',
+                    '<text x="175" y="237" font-family="Arial, sans-serif" font-size="12" fill="#333333" text-anchor="middle">Created on: ',
                     formattedCreationDate,
                     '</text>',
-                    // Recovery status
-                    '<text x="175" y="260" font-family="Arial" font-size="12" fill="#333333" text-anchor="middle">',
+                    // Recovery status with modern styling
+                    '<rect x="75" y="255" width="200" height="25" rx="5" fill="#f8f9fa" stroke="#e0e0e0" stroke-width="1" />',
+                    '<text x="175" y="272" font-family="Arial, sans-serif" font-size="12" fill="#333333" text-anchor="middle">',
                     identity.isRecoverable
                         ? 'Recovery Enabled'
                         : 'No Recovery Set',
                     '</text>',
-                    // Footer with verification count
-                    '<rect x="35" y="285" width="280" height="30" rx="5" fill="#f0f0f0" />',
-                    '<text x="175" y="305" font-family="Arial" font-size="12" fill="#333333" text-anchor="middle">Verifiers: ',
+                    // Footer with verification count in modern style
+                    '<rect x="35" y="290" width="280" height="30" rx="15" fill="#f0f0f0" filter="drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.05))" />',
+                    '<text x="175" y="310" font-family="Arial, sans-serif" font-size="12" fill="#333333" text-anchor="middle">Verifiers: ',
                     verifierCountStr,
                     '</text>',
                     '</svg>'
