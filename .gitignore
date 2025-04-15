@@ -6,5 +6,8 @@ deployed-addresses.json
 
 backend/*.log
 backend/.env
-
+backend/data/*
 apitest.sh
+
+oracle/logs/*.log
+
