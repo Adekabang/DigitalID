@@ -92,28 +92,28 @@ npm start
 
 ## Manual Verification Testing
 
-You can test the complete verification flow using the provided script:
+You can test the complete verification flow using the API flow test script in the project root:
 
 ```bash
-npx hardhat run scripts/kyc-manual-flow.js --network localhost
+# From project root
+./scripts/test-api-flow.sh
 ```
 
 This script performs all steps:
-1. Creates a user identity
-2. Requests KYC verification
-3. Confirms verification in `VerificationRegistry`
-4. First verifier approves to BASIC_VERIFIED level
-5. Second verifier approves to KYC_VERIFIED level
-6. Verifies the final verification level
+1. Creates a user identity through the Backend API
+2. Requests KYC verification through the Oracle
+3. First verifier approves to BASIC_VERIFIED level
+4. Second verifier approves to KYC_VERIFIED level
+5. Verifies the final verification level
 
-Alternatively, use the API endpoints:
+Alternatively, use the API endpoints directly:
 
 ```bash
-# 1. Create identity
-curl -X POST http://localhost:3030/api/identity/create \
+# 1. Create identity (using Backend API)
+curl -X POST http://localhost:3000/api/identity/create \
   -H "Content-Type: application/json" \
   -d '{
-    "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "userAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "did": "did:ethr:0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "metadata": {
       "name": "Test User",

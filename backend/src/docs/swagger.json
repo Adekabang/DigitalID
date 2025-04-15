@@ -15,7 +15,11 @@
   "servers": [
     {
       "url": "http://localhost:3000",
-      "description": "Development server"
+      "description": "Backend API server"
+    },
+    {
+      "url": "http://localhost:3030",
+      "description": "Oracle service server"
     },
     {
       "url": "https://api.identity.example.com",
@@ -54,6 +58,10 @@
     {
       "name": "Gateway",
       "description": "API gateway operations for third-party integration"
+    },
+    {
+      "name": "Oracle",
+      "description": "Oracle service operations (via separate service)"
     }
   ],
   "paths": {
@@ -2118,6 +2126,135 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/mock": {
+      "post": {
+        "tags": ["Oracle"],
+        "summary": "Run mock verification (Oracle)",
+        "description": "Verify an identity using the mock verification provider (via Oracle service)",
+        "operationId": "mockVerification",
+        "externalDocs": {
+          "description": "Oracle API Documentation",
+          "url": "http://localhost:3030/docs"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["address", "verificationType"],
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "Ethereum address to verify",
+                    "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                  },
+                  "verificationType": {
+                    "oneOf": [
+                      { "type": "integer" },
+                      { "type": "string" }
+                    ],
+                    "description": "Type of verification to perform",
+                    "example": 0
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Verification metadata",
+                    "example": {
+                      "name": "Test User",
+                      "document": "passport",
+                      "documentId": "AB123456"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification requested successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Verification process completed successfully"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/second-approval": {
+      "post": {
+        "tags": ["Oracle"],
+        "summary": "Second verifier approval (Oracle)",
+        "description": "Add second verifier approval to upgrade verification level (via Oracle service)",
+        "externalDocs": {
+          "description": "Oracle API Documentation",
+          "url": "http://localhost:3030/docs"
+        },
+        "operationId": "secondVerifierApproval",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["tokenId"],
+                "properties": {
+                  "tokenId": {
+                    "type": "string",
+                    "description": "Token ID of the identity",
+                    "example": "1"
+                  },
+                  "targetLevel": {
+                    "type": "integer",
+                    "description": "Target verification level (2=KYC_VERIFIED, 3=FULL_VERIFIED)",
+                    "example": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Second approval processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Successfully upgraded token 1 to verification level KYC_VERIFIED"
+                    }
+                  }
                 }
               }
             }

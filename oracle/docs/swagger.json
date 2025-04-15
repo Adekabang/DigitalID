@@ -1,0 +1,1267 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Blockchain Identity Oracle API",
+    "description": "API documentation for the Oracle service that bridges blockchain identity verification with KYC providers",
+    "version": "1.0.0",
+    "contact": {
+      "email": "support@example.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3030",
+      "description": "Development server"
+    },
+    {
+      "url": "https://oracle.identity.example.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Identity",
+      "description": "Identity management operations"
+    },
+    {
+      "name": "Verifications",
+      "description": "Verification-related operations"
+    },
+    {
+      "name": "Events",
+      "description": "Blockchain event handling operations"
+    },
+    {
+      "name": "Callbacks",
+      "description": "Callback endpoints for external services"
+    },
+    {
+      "name": "Health",
+      "description": "Health and status monitoring"
+    }
+  ],
+  "paths": {
+    "/api/identity/details": {
+      "get": {
+        "tags": ["Identity"],
+        "summary": "Get identity details",
+        "description": "Retrieve identity details from the blockchain",
+        "operationId": "getIdentityDetails",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identity found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tokenId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "owner": {
+                          "type": "string",
+                          "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                        },
+                        "did": {
+                          "type": "string",
+                          "example": "did:ethr:0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                        },
+                        "verificationLevel": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "verificationLevelName": {
+                          "type": "string",
+                          "example": "BASIC_VERIFIED"
+                        },
+                        "creationDate": {
+                          "type": "string",
+                          "example": "1678897200"
+                        },
+                        "lastUpdate": {
+                          "type": "string",
+                          "example": "1678983600"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/create": {
+      "post": {
+        "tags": ["Identity"],
+        "summary": "Create identity",
+        "description": "Create a new identity in the blockchain",
+        "operationId": "createIdentity",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["address", "did"],
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "Ethereum address",
+                    "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                  },
+                  "did": {
+                    "type": "string",
+                    "description": "Decentralized identifier",
+                    "example": "did:ethr:0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Additional identity metadata",
+                    "example": {
+                      "name": "Test User",
+                      "email": "user@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Identity created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tokenId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "transactionHash": {
+                          "type": "string",
+                          "example": "0x123..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/identity/verificationLevel": {
+      "get": {
+        "tags": ["Identity"],
+        "summary": "Get verification level",
+        "description": "Retrieve verification level for an identity",
+        "operationId": "getVerificationLevel",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "description": "Ethereum address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification level retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                        },
+                        "tokenId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "verificationLevel": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "verificationLevelName": {
+                          "type": "string",
+                          "example": "BASIC_VERIFIED"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/pending": {
+      "get": {
+        "tags": ["Verifications"],
+        "summary": "Get pending verifications",
+        "description": "Retrieve all pending verification requests",
+        "operationId": "getPendingVerifications",
+        "responses": {
+          "200": {
+            "description": "Pending verifications retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "pendingCount": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "verifications": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "example": "0x123..."
+                              },
+                              "userAddress": {
+                                "type": "string",
+                                "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                              },
+                              "verificationType": {
+                                "type": "string",
+                                "example": "0"
+                              },
+                              "status": {
+                                "type": "integer",
+                                "example": 0
+                              },
+                              "timestamp": {
+                                "type": "string",
+                                "example": "1678897200"
+                              },
+                              "metadata": {
+                                "type": "string",
+                                "example": "{\"name\":\"Test User\",\"document\":\"passport\",\"documentId\":\"AB123456\"}"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/{id}": {
+      "get": {
+        "tags": ["Verifications"],
+        "summary": "Get verification details",
+        "description": "Retrieve details of a specific verification request",
+        "operationId": "getVerificationDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Verification ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "userAddress": {
+                          "type": "string",
+                          "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                        },
+                        "verificationType": {
+                          "type": "string",
+                          "example": "0"
+                        },
+                        "status": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "example": "1678897200"
+                        },
+                        "metadata": {
+                          "type": "string",
+                          "example": "{\"name\":\"Test User\",\"document\":\"passport\",\"documentId\":\"AB123456\"}"
+                        },
+                        "result": {
+                          "type": "string",
+                          "example": ""
+                        },
+                        "verifier": {
+                          "type": "string",
+                          "example": "0x0000000000000000000000000000000000000000"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Verification not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/{id}/process": {
+      "post": {
+        "tags": ["Verifications"],
+        "summary": "Process verification",
+        "description": "Manually process a verification request",
+        "operationId": "processVerification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Verification ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["approved"],
+                "properties": {
+                  "approved": {
+                    "type": "boolean",
+                    "description": "Whether to approve or reject the verification",
+                    "example": true
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for approval or rejection",
+                    "example": "Verified identity with government ID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Verification 1 approved"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Verification not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/mock": {
+      "post": {
+        "tags": ["Verifications"],
+        "summary": "Run mock verification",
+        "description": "Verify an identity using the mock verification provider",
+        "operationId": "mockVerification",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["address", "verificationType"],
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "Ethereum address to verify",
+                    "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                  },
+                  "verificationType": {
+                    "oneOf": [
+                      { "type": "integer" },
+                      { "type": "string" }
+                    ],
+                    "description": "Type of verification to perform",
+                    "example": 0
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Verification metadata",
+                    "example": {
+                      "name": "Test User",
+                      "document": "passport",
+                      "documentId": "AB123456"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Verification process completed successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "result": {
+                          "type": "object",
+                          "properties": {
+                            "success": {
+                              "type": "boolean",
+                              "example": true
+                            },
+                            "provider": {
+                              "type": "string",
+                              "example": "mock"
+                            },
+                            "verificationId": {
+                              "type": "string",
+                              "example": "mock-123"
+                            },
+                            "status": {
+                              "type": "string",
+                              "example": "approved"
+                            }
+                          }
+                        },
+                        "verificationId": {
+                          "type": "string",
+                          "example": "0x123..."
+                        },
+                        "tokenId": {
+                          "type": "string",
+                          "example": "1"
+                        },
+                        "verificationLevel": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "verificationLevelName": {
+                          "type": "string",
+                          "example": "BASIC_VERIFIED"
+                        },
+                        "transactions": {
+                          "type": "object",
+                          "properties": {
+                            "verify": {
+                              "type": "string",
+                              "example": "0x123..."
+                            },
+                            "approve": {
+                              "type": "string",
+                              "example": "0x456..."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/request": {
+      "post": {
+        "tags": ["Verifications"],
+        "summary": "Request verification",
+        "description": "Request a verification through the oracle",
+        "operationId": "requestVerification",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["address", "verificationType"],
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "Ethereum address to verify",
+                    "example": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+                  },
+                  "verificationType": {
+                    "oneOf": [
+                      { "type": "integer" },
+                      { "type": "string" }
+                    ],
+                    "description": "Type of verification to perform",
+                    "example": 0
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Verification metadata",
+                    "example": {
+                      "name": "Test User",
+                      "document": "passport",
+                      "documentId": "AB123456"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification requested successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Verification requested successfully"
+                    },
+                    "transactionHash": {
+                      "type": "string",
+                      "example": "0x123..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/verifications/second-approval": {
+      "post": {
+        "tags": ["Verifications"],
+        "summary": "Second verifier approval",
+        "description": "Add second verifier approval to upgrade verification level",
+        "operationId": "secondVerifierApproval",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["tokenId"],
+                "properties": {
+                  "tokenId": {
+                    "type": "string",
+                    "description": "Token ID of the identity",
+                    "example": "1"
+                  },
+                  "targetLevel": {
+                    "type": "integer",
+                    "description": "Target verification level (2=KYC_VERIFIED, 3=FULL_VERIFIED)",
+                    "example": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Second approval processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Successfully upgraded token 1 to verification level KYC_VERIFIED"
+                    },
+                    "verificationLevel": {
+                      "type": "string",
+                      "example": "2"
+                    },
+                    "verificationLevelName": {
+                      "type": "string",
+                      "example": "KYC_VERIFIED"
+                    },
+                    "beforeLevel": {
+                      "type": "string",
+                      "example": "1"
+                    },
+                    "beforeVerificationCount": {
+                      "type": "string",
+                      "example": "1"
+                    },
+                    "afterVerificationCount": {
+                      "type": "string",
+                      "example": "2"
+                    },
+                    "targetLevel": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "secondVerifierAddress": {
+                      "type": "string",
+                      "example": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+                    },
+                    "transactionHash": {
+                      "type": "string",
+                      "example": "0x123..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{contractName}/{eventName}": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "Get contract events",
+        "description": "Retrieve events of a specific type from a contract",
+        "operationId": "getContractEvents",
+        "parameters": [
+          {
+            "name": "contractName",
+            "in": "path",
+            "description": "Contract name",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["identity", "verification", "reputation", "appeal", "moderator", "mfa"]
+            }
+          },
+          {
+            "name": "eventName",
+            "in": "path",
+            "description": "Event name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromBlock",
+            "in": "query",
+            "description": "Starting block number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "toBlock",
+            "in": "query",
+            "description": "Ending block number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "blockNumber": {
+                            "type": "integer",
+                            "example": 12345
+                          },
+                          "transactionHash": {
+                            "type": "string",
+                            "example": "0x123..."
+                          },
+                          "event": {
+                            "type": "string",
+                            "example": "IdentityCreated"
+                          },
+                          "args": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/poll": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Poll for missed events",
+        "description": "Force poll for missed blockchain events",
+        "operationId": "pollEvents",
+        "responses": {
+          "200": {
+            "description": "Events polled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Events polled successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "eventsProcessed": {
+                          "type": "integer",
+                          "example": 3
+                        },
+                        "fromBlock": {
+                          "type": "integer",
+                          "example": 12340
+                        },
+                        "toBlock": {
+                          "type": "integer",
+                          "example": 12350
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/callbacks/kyc": {
+      "post": {
+        "tags": ["Callbacks"],
+        "summary": "KYC callback",
+        "description": "Callback endpoint for KYC providers",
+        "operationId": "kycCallback",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["referenceId", "status"],
+                "properties": {
+                  "referenceId": {
+                    "type": "string",
+                    "description": "Reference ID from the original verification request",
+                    "example": "verif-123"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Status of the verification",
+                    "enum": ["approved", "rejected", "pending"],
+                    "example": "approved"
+                  },
+                  "data": {
+                    "type": "object",
+                    "description": "Additional verification data",
+                    "example": {
+                      "documentType": "passport",
+                      "documentId": "AB123456",
+                      "expiryDate": "2025-12-31"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Callback processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Callback processed successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "description": "Check the health status of the oracle service",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "healthy"
+                    },
+                    "blockchain": {
+                      "type": "object",
+                      "properties": {
+                        "connected": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "chainId": {
+                          "type": "integer",
+                          "example": 31337
+                        },
+                        "contracts": {
+                          "type": "object",
+                          "properties": {
+                            "identity": {
+                              "type": "string",
+                              "example": "0x123..."
+                            },
+                            "verification": {
+                              "type": "string",
+                              "example": "0x456..."
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "uptime": {
+                      "type": "string",
+                      "example": "10h 30m"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-03-15T14:30:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "unhealthy"
+                    },
+                    "blockchain": {
+                      "type": "object",
+                      "properties": {
+                        "connected": {
+                          "type": "boolean",
+                          "example": false
+                        },
+                        "error": {
+                          "type": "string",
+                          "example": "Failed to connect to provider"
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2023-03-15T14:30:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Invalid address format"
+          }
+        }
+      }
+    }
+  }
+}

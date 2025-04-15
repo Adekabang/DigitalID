@@ -25,96 +25,117 @@ A key security feature of the DigitalIdentityNFT contract is the requirement for
 1. **Oracle Service** - Off-chain service that processes verification requests and interacts with the blockchain
 2. **KYC Providers** - External or mock services that perform actual KYC verification
 
+## API Endpoints Overview
+
+### Backend API (localhost:3000)
+- `/api/system/health` - Check backend API health status
+- `/api/identity/{address}` - Get identity information for a specific address
+- `/api/identity/create` - Create a new identity
+- `/api/identity/verificationLevel` - Get verification level for an address
+
+### Oracle API (localhost:3030)
+- `/health` - Check Oracle API health status
+- `/api/identity/verificationLevel` - Get verification level for an address
+- `/api/verifications/mock` - Submit a mock verification request
+- `/api/verifications/pending` - List any pending verifications
+- `/api/verifications/second-approval` - Request a second verifier approval
+
 ## Detailed Verification Flow
 
 ### 1. Identity Creation
 
-An identity is created in the DigitalIdentityNFT contract. Initially, the identity has a verification level of 0 (UNVERIFIED).
+An identity is created in the DigitalIdentityNFT contract via the Backend API. Initially, the identity has a verification level of 0 (UNVERIFIED).
 
 ```javascript
-// Create identity through API
-curl -X POST http://localhost:3030/api/identity/create \
+// Create identity through Backend API
+curl -X POST http://localhost:3000/api/identity/create \
   -H "Content-Type: application/json" \
   -d '{
-    "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "userAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "did": "did:ethr:0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "metadata": {
       "name": "Test User",
-      "email": "user@example.com"
+      "email": "user@example.com",
+      "createdAt": "2023-04-15T10:30:00Z"
     }
   }'
 ```
 
 ### 2. Request Verification
 
-A user requests verification through the VerificationRegistry contract:
+A user requests verification through the Oracle's mock verification endpoint (for testing) or through the standard verification request endpoint:
 
 ```javascript
-// Request verification through API
-curl -X POST http://localhost:3030/api/verifications/request \
+// Request mock verification through Oracle API
+curl -X POST http://localhost:3030/api/verifications/mock \
   -H "Content-Type: application/json" \
   -d '{
     "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "verificationType": 0,
-    "data": {
-      "name": "Test User",
-      "document": "passport",
-      "documentId": "AB123456"
+    "metadata": {
+      "fullName": "Test User",
+      "dateOfBirth": "1990-01-01",
+      "documentType": "passport",
+      "documentId": "AB123456",
+      "nationality": "USA",
+      "verificationRequest": "2023-04-15T10:30:00Z"
     }
   }'
 ```
 
-The verification request is stored in the VerificationRegistry with a unique verification ID, calculated as:
-```
-verificationId = keccak256(userAddress, verificationType)
-```
+The Oracle service processes this request and performs two steps:
+1. Uses the `verify` method in VerificationRegistry to mark the verification as confirmed
+2. Approves the verification in DigitalIdentityNFT to level 1 (BASIC_VERIFIED)
 
 ### 3. Oracle Processes Verification
 
-The Oracle service monitors the blockchain for verification requests. When a new request is detected:
+When processing the verification, the Oracle:
 
-1. The Oracle processes the verification data (either through a mock or external KYC provider)
-2. The Oracle submits the verification result to the VerificationRegistry
+1. Utilizes its VERIFIER_ROLE to directly call the verification contract
+2. Processes the verification data (either through a mock or external KYC provider)
+3. Submits the verification result to the VerificationRegistry using the `verify` method
+4. Computes a unique verification ID based on the user address and verification type
+5. Retrieves the token ID for the user's address
+6. Approves the verification in the DigitalIdentityNFT contract to BASIC_VERIFIED level
 
 ```javascript
-// Oracle confirms verification in VerificationRegistry
-await verificationContract.connect(oracleAdmin).confirmVerification(
-  verificationId,
-  true, // isVerified
-  resultMetadata
+// Oracle confirms verification in VerificationRegistry and approves in DigitalIdentityNFT
+const verifyResult = await blockchainService.executeTransaction(
+  'verification',
+  'verify',
+  [
+    address,  // The address to verify
+    verificationTypeNum,
+    metadataStr,
+    "0x" // Empty signature
+  ]
+);
+
+// Then approves in DigitalIdentityNFT
+const approveResult = await blockchainService.executeTransaction(
+  'identity',
+  'approveVerification',
+  [tokenId, 1] // Level 1 = BASIC_VERIFIED
 );
 ```
 
-### 4. First Verifier Approval in DigitalIdentityNFT
+### 4. Check for Pending Verifications (Optional)
 
-After successful verification in the VerificationRegistry, the Oracle (acting as the first verifier) approves the identity in the DigitalIdentityNFT contract:
+After submitting a verification request, you can check if there are any pending verifications:
 
 ```javascript
-// First verifier approves to BASIC_VERIFIED level
-await identityContract.connect(oracleAdmin).approveVerification(
-  tokenId,
-  1 // BASIC_VERIFIED level
-);
+// Check pending verifications
+curl http://localhost:3030/api/verifications/pending
 ```
 
-At this point, the identity has a verification level of 1 (BASIC_VERIFIED).
+With the current implementation, verifications are processed immediately, so this step typically returns an empty list.
 
 ### 5. Second Verifier Approval in DigitalIdentityNFT
 
 To upgrade to KYC_VERIFIED level, a second verifier must approve:
 
 ```javascript
-// Second verifier approves to KYC_VERIFIED level
-await identityContract.connect(secondVerifier).approveVerification(
-  tokenId,
-  2 // KYC_VERIFIED level
-);
-```
-
-The second verifier **must be a different address** than the first verifier. This approval can be triggered via API:
-
-```javascript
-// Request second verifier approval through API
+// Request second verifier approval through Oracle API
 curl -X POST http://localhost:3030/api/verifications/second-approval \
   -H "Content-Type: application/json" \
   -d '{
@@ -123,15 +144,53 @@ curl -X POST http://localhost:3030/api/verifications/second-approval \
   }'
 ```
 
-The Oracle service handles this by executing a script that uses a different verifier address to make the approval.
+The Oracle service handles this by using a different verifier wallet to make the approval:
+
+1. It creates a new ethers.js wallet with a different private key (Account #2 in Hardhat)
+2. Ensures this second wallet has the VERIFIER_ROLE in the DigitalIdentityNFT contract
+3. Creates a contract instance with the second verifier as signer
+4. Calls `approveVerification` directly through this contract instance:
+
+```javascript
+// Create a wallet for the second verifier
+secondVerifierWallet = new ethers.Wallet(secondVerifierPrivateKey, provider);
+
+// Create contract instance with second verifier as signer
+identityContractWithSecondVerifier = new ethers.Contract(
+  identityContractAddress,
+  identityContractABI,
+  secondVerifierWallet
+);
+
+// Approve verification as second verifier
+tx = await identityContractWithSecondVerifier.approveVerification(
+  tokenId,
+  verificationLevel // 2 = KYC_VERIFIED
+);
+```
+
+The second verifier **must be a different address** than the first verifier.
 
 ### 6. Check Verification Level
 
-After both verifier approvals, the identity should have a verification level of 2 (KYC_VERIFIED):
+After both verifier approvals, the identity should have a verification level of 2 (KYC_VERIFIED). You can check this through the Oracle API:
 
 ```javascript
-// Check verification level through API
+// Check verification level through Oracle API
 curl http://localhost:3030/api/identity/verificationLevel?address=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+```
+
+The response includes both the numeric level and the name:
+
+```json
+{
+  "success": true,
+  "data": {
+    "level": 2,
+    "levelName": "KYC VERIFIED",
+    "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+  }
+}
 ```
 
 ## Role Requirements
@@ -149,23 +208,75 @@ await verificationContract.grantRole(verifierRole, verifierAddress);
 
 ## Testing the Flow
 
-### Using the Automated Script
+### Using the API Flow Script
 
 The repository includes a script to test the full verification flow:
 
 ```bash
 # From project root
-node scripts/kyc-manual-flow.js
-```
-
-### Using the API Flow Script
-
-For testing through the API endpoints:
-
-```bash
-# From project root
 ./scripts/test-api-flow.sh
 ```
+
+This script demonstrates the complete verification flow:
+1. Checks health of both Backend and Oracle services
+2. Creates an identity using the Backend API
+3. Checks initial verification level
+4. Requests verification through the Oracle service's mock verification endpoint
+5. Checks for any pending verifications
+6. Verifies the verification level has been updated to BASIC_VERIFIED
+7. Adds a second verifier approval through the Oracle service
+8. Checks the final verification level to confirm it has been upgraded to KYC_VERIFIED
+
+The script includes detailed error handling and diagnostic information to help troubleshoot any issues during the verification process.
+
+### Manual Testing with Oracle API
+
+You can also manually test the verification flow using API requests to the Oracle service:
+
+```bash
+# 1. Create identity (now using Backend API)
+curl -X POST http://localhost:3000/api/identity/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "did": "did:ethr:0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "metadata": {
+      "name": "Test User",
+      "email": "user@example.com"
+    }
+  }'
+
+# 2. Request verification through Oracle API
+curl -X POST http://localhost:3030/api/verifications/mock \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "verificationType": 0,
+    "metadata": {
+      "fullName": "Test User",
+      "dateOfBirth": "1990-01-01",
+      "documentType": "passport",
+      "documentId": "AB123456",
+      "nationality": "USA"
+    }
+  }'
+
+# 3. Get token ID from identity
+curl http://localhost:3030/api/identity/verificationLevel?address=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+
+# 4. Add second verifier approval
+curl -X POST http://localhost:3030/api/verifications/second-approval \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tokenId": "1",
+    "targetLevel": 2
+  }'
+
+# 5. Check final verification level
+curl http://localhost:3030/api/identity/verificationLevel?address=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+```
+
+This manual process follows the same steps as the automatic script but allows you to inspect the responses at each stage.
 
 ## Debugging Common Issues
 
@@ -182,6 +293,31 @@ If the verification level remains at 1 (BASIC_VERIFIED) after the KYC process:
 
 - "Requires multiple verifier approvals" - This error occurs when trying to upgrade to KYC_VERIFIED without having 2 different verifiers
 - "Caller doesn't have VERIFIER_ROLE" - The account needs to be granted the VERIFIER_ROLE
+- "Transaction from mismatch" - The wrong account is being used to send the transaction
+
+### API Response Field Variations
+
+In some cases, the API response field names may vary between services:
+- `level` vs `verificationLevel`
+- `levelName` vs `verificationLevelName`
+
+The test script handles these variations automatically.
+
+### BigInt Serialization Errors
+
+When working with the API, you might encounter BigInt serialization errors in the JSON response. The Oracle service now includes proper handling for BigInt values with a custom serialization function:
+
+```javascript
+// Helper function to safely stringify BigInt values
+const safeStringify = (obj) => {
+  return JSON.stringify(obj, (key, value) => 
+    typeof value === 'bigint' ? value.toString() : value
+  );
+};
+
+// Parse and re-stringify to handle any nested BigInt values
+return res.json(JSON.parse(safeStringify(responseObj)));
+```
 
 ## Advanced Usage
 

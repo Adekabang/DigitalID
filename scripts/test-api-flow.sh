@@ -1,17 +1,35 @@
 #!/bin/bash
 
 # Script to test the complete verification flow using curl
-# This demonstrates the manual verification flow using the Oracle API
+# This demonstrates creating an identity through the backend API 
+# and using the Oracle service for verification
 
 echo "===== BLOCKCHAIN IDENTITY SYSTEM - VERIFICATION FLOW TEST ====="
 echo ""
 
 # 0. Configuration
+BACKEND_API="http://localhost:3000"
 ORACLE_API="http://localhost:3030"
 TEST_USER="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
 
-# Function to check if the API is accessible
-check_api_health() {
+# Function to check if the backend API is accessible
+check_backend_health() {
+  echo "Checking if Backend API is available at ${BACKEND_API}..."
+  HEALTH_CHECK=$(curl -s -m 5 "${BACKEND_API}/api/system/health" 2>/dev/null)
+  if [ $? -ne 0 ] || [ -z "$HEALTH_CHECK" ]; then
+    echo "❌ ERROR: Backend API is not accessible at ${BACKEND_API}"
+    echo "Please make sure the Backend service is running."
+    exit 1
+  else
+    echo "✅ Backend API is available!"
+    echo ""
+    echo "API Health Status:"
+    echo "$HEALTH_CHECK" | jq
+  fi
+}
+
+# Function to check if the Oracle API is accessible
+check_oracle_health() {
   echo "Checking if Oracle API is available at ${ORACLE_API}..."
   HEALTH_CHECK=$(curl -s -m 5 "${ORACLE_API}/health" 2>/dev/null)
   if [ $? -ne 0 ] || [ -z "$HEALTH_CHECK" ]; then
@@ -26,17 +44,21 @@ check_api_health() {
   fi
 }
 
-# 1. Check health of Oracle service
-echo "1. Checking Oracle API health..."
-check_api_health
+# 1. Check health of both services
+echo "1a. Checking Backend API health..."
+check_backend_health
+
+echo ""
+echo "1b. Checking Oracle API health..."
+check_oracle_health
 
 echo ""
 read -p "Press Enter to continue..."
 echo ""
 
-# 2. Create an identity if needed
+# 2. Create an identity if needed (using BACKEND API)
 echo "2. Checking if user already has identity..."
-IDENTITY_CHECK=$(curl -s "${ORACLE_API}/api/identity/details?address=${TEST_USER}")
+IDENTITY_CHECK=$(curl -s "${BACKEND_API}/api/identity/${TEST_USER}")
 HAS_IDENTITY=$(echo $IDENTITY_CHECK | jq -r '.success')
 
 if [ "$HAS_IDENTITY" == "true" ]; then
@@ -45,11 +67,16 @@ if [ "$HAS_IDENTITY" == "true" ]; then
   TOKEN_ID=$(echo $IDENTITY_CHECK | jq -r '.data.tokenId')
   echo "Using Token ID: ${TOKEN_ID}"
 else
-  echo "Creating new identity for user..."
-  IDENTITY_RESULT=$(curl -s -X POST "${ORACLE_API}/api/identity/create" \
+  echo "Creating new identity for user with Backend API..."
+  
+  # Get authentication token for Backend API (you may need to implement this depending on your auth system)
+  # For simplicity, we're assuming the backend's identity/create endpoint allows public access
+  # or you have implemented the appropriate authentication mechanism
+  
+  IDENTITY_RESULT=$(curl -s -X POST "${BACKEND_API}/api/identity/create" \
     -H "Content-Type: application/json" \
     -d '{
-      "address": "'"${TEST_USER}"'",
+      "userAddress": "'"${TEST_USER}"'",
       "did": "did:ethr:'"${TEST_USER}"'",
       "metadata": {
         "name": "Test User",
@@ -63,14 +90,14 @@ else
   # Get token ID after identity creation
   echo "Waiting for identity creation to be processed..."
   sleep 5
-  IDENTITY_CHECK=$(curl -s "${ORACLE_API}/api/identity/details?address=${TEST_USER}")
+  IDENTITY_CHECK=$(curl -s "${BACKEND_API}/api/identity/${TEST_USER}")
   TOKEN_ID=$(echo $IDENTITY_CHECK | jq -r '.data.tokenId')
   
   if [ -z "$TOKEN_ID" ] || [ "$TOKEN_ID" == "null" ]; then
     echo "❌ ERROR: Could not retrieve token ID after identity creation."
     echo "Trying again after a longer delay..."
     sleep 10
-    IDENTITY_CHECK=$(curl -s "${ORACLE_API}/api/identity/details?address=${TEST_USER}")
+    IDENTITY_CHECK=$(curl -s "${BACKEND_API}/api/identity/${TEST_USER}")
     TOKEN_ID=$(echo $IDENTITY_CHECK | jq -r '.data.tokenId')
     
     if [ -z "$TOKEN_ID" ] || [ "$TOKEN_ID" == "null" ]; then
@@ -125,8 +152,8 @@ if [ "$VERIFICATION_SUCCESS" == "true" ]; then
   echo "✅ KYC verification request processed successfully!"
   
   # Get verification level from the response
-  VERIFICATION_LEVEL=$(echo "$VERIFICATION_RESULT" | jq -r '.data.level')
-  VERIFICATION_LEVEL_NAME=$(echo "$VERIFICATION_RESULT" | jq -r '.data.levelName')
+  VERIFICATION_LEVEL=$(echo "$VERIFICATION_RESULT" | jq -r '.data.verificationLevel')
+  VERIFICATION_LEVEL_NAME=$(echo "$VERIFICATION_RESULT" | jq -r '.data.verificationLevelName')
   
   if [ ! -z "$VERIFICATION_LEVEL" ] && [ "$VERIFICATION_LEVEL" != "null" ]; then
     echo "Current verification level is now: ${VERIFICATION_LEVEL_NAME} (${VERIFICATION_LEVEL})"

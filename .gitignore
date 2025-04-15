@@ -9,5 +9,5 @@ backend/.env
 backend/data/*
 apitest.sh
 
-oracle/*.log
+oracle/logs/*.log
 

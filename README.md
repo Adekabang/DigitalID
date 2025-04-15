@@ -42,11 +42,14 @@ blockchain-identity-system/
 ├── node_modules/         # Project dependencies
 ├── scripts/              # Hardhat deployment and interaction scripts
 │   ├── deploy.js
-│   └── interact.js
+│   ├── interact.js
+│   ├── test-api-flow.sh  # Verification flow test script
+│   └── ...
 ├── test/                 # Smart contract tests
 ├── .gitignore
 ├── hardhat.config.js     # Hardhat configuration
-├── KODING.md             # AI assistant context
+├── KODING.md             # Development roadmap
+├── VERIFICATION_FLOW.md  # Detailed verification process documentation
 ├── package.json
 ├── README.md             # This file
 └── deployed-addresses.json # Addresses of deployed contracts
@@ -79,8 +82,9 @@ Managed and tested using the Hardhat development environment.
 -   Monitors blockchain events for new identity creation, verification requests, and moderation actions.
 -   Integrates with external KYC providers with a pluggable architecture.
 -   Provides a RESTful API for verification status checks and callbacks.
+-   Implements direct contract interaction with a dual-verifier security model.
 
-### Demo App (`demo-app/`)
+### Demo App (`backend/docs/integration-examples/demo-app/`)
 
 -   Simple example application showing third-party integration with the identity system.
 -   Implements "Sign in with Blockchain Identity" using MetaMask.
@@ -143,13 +147,13 @@ Managed and tested using the Hardhat development environment.
     ```bash
     npm run dev
     ```
-    _(The oracle service will start, typically on port 3040)_
+    _(The oracle service will start, typically on port 3030)_
 
 ### Demo App Setup
 
 1.  **Install Demo App Dependencies:**
     ```bash
-    cd demo-app
+    cd backend/docs/integration-examples/demo-app
     npm i
     ```
 2.  **Run Demo App:** (Keep this terminal running)
@@ -191,8 +195,10 @@ Managed and tested using the Hardhat development environment.
         node backend/scripts/generate-auth.js
         ```
 -   **Oracle API:**
-    -   Access Oracle endpoints (defined in `oracle/src/controllers`) via `http://localhost:3040`.
-    -   Check verification status via `/api/verifications/:id`
+    -   Access Oracle endpoints (defined in `oracle/src/controllers`) via `http://localhost:3030`.
+    -   Mock verification can be requested via `/api/verifications/mock`
+    -   Second verifier approval via `/api/verifications/second-approval`
+    -   Check verification status via `/api/identity/verificationLevel`
     -   View health status via `/health`
 
 -   **Demo App:**
@@ -228,7 +234,7 @@ The `DigitalIdentityNFT` contract includes a security feature that requires **at
 
 1. **Identity Creation**
    ```bash
-   curl -X POST http://localhost:3030/api/identity/create \
+   curl -X POST http://localhost:3000/api/identity/create \
      -H "Content-Type: application/json" \
      -d '{
        "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", 
@@ -240,14 +246,14 @@ The `DigitalIdentityNFT` contract includes a security feature that requires **at
      }'
    ```
 
-2. **Request Verification in VerificationRegistry**
+2. **Request Verification via Oracle's Mock Endpoint**
    ```bash
-   curl -X POST http://localhost:3030/api/verifications/request \
+   curl -X POST http://localhost:3030/api/verifications/mock \
      -H "Content-Type: application/json" \
      -d '{
        "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
        "verificationType": 0,
-       "data": {
+       "metadata": {
          "name": "Test User",
          "document": "passport",
          "documentId": "AB123456"
@@ -256,18 +262,15 @@ The `DigitalIdentityNFT` contract includes a security feature that requires **at
    ```
 
 3. **Oracle Processes Verification**
-   - Oracle monitors verification requests
-   - Processes KYC data (either mock or external provider)
-   - Submits verification result to VerificationRegistry
-
-4. **First Verification in DigitalIdentityNFT**
-   - After successful verification in VerificationRegistry
-   - Oracle (first verifier) approves to BASIC_VERIFIED (level 1) in DigitalIdentityNFT
+   - Oracle processes verification request
+   - Uses its VERIFIER_ROLE to call the verify method directly
+   - Approves identity to BASIC_VERIFIED (level 1) in DigitalIdentityNFT
    - This is automatically handled by the oracle service
 
-5. **Second Verification in DigitalIdentityNFT**
+4. **Second Verification in DigitalIdentityNFT**
    - Required for KYC_VERIFIED (level 2)
-   - Can be triggered via API endpoint:
+   - Uses a different verifier address
+   - Triggered via API endpoint:
    ```bash
    curl -X POST http://localhost:3030/api/verifications/second-approval \
      -H "Content-Type: application/json" \
@@ -277,9 +280,9 @@ The `DigitalIdentityNFT` contract includes a security feature that requires **at
      }'
    ```
 
-6. **Check Verification Status**
+5. **Check Verification Status**
    ```bash
-   curl http://localhost:3030/api/identity/verificationLevel?address=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+   curl http://localhost:3000/api/identity/verificationLevel?address=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
    ```
 
 ### Testing with Script
@@ -287,7 +290,7 @@ The `DigitalIdentityNFT` contract includes a security feature that requires **at
 The repository includes a script to test the full verification flow:
 ```bash
 # From project root
-node scripts/kyc-manual-flow.js
+./scripts/test-api-flow.sh
 ```
 
 This script demonstrates the complete verification flow including both verifier approvals required to reach KYC_VERIFIED level.
@@ -298,3 +301,12 @@ This script demonstrates the complete verification flow including both verifier 
 -   **Backend:** Test API endpoints using Postman or curl.
 -   **Oracle:** Test verification flows with the mock KYC provider.
 -   **Integration:** Use the demo app to test the full authentication flow.
+-   **Verification Flow:** Use the test-api-flow.sh script to test the complete verification process.
+
+## Documentation
+
+- **VERIFICATION_FLOW.md** - Detailed explanation of the verification process
+- **KODING.md** - Development roadmap and feature status
+- **oracle/docs/kyc-integration-guide.md** - Guide for integrating KYC providers with the Oracle
+- **backend/docs/swagger.json** - Backend API documentation in OpenAPI format
+- **backend/docs/integration-examples/** - Integration examples for third-party platforms
