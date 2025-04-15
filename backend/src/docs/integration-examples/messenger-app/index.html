@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Secure Messenger with Blockchain Identity</title>
+        <link rel="stylesheet" href="public/css/styles.css" />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.2.0/ethers.umd.min.js"
+            type="application/javascript"
+        ></script>
+        <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Secure Messenger</h1>
+            <div id="login-section">
+                <h2>Connect Your Wallet</h2>
+                <p>Sign in with your blockchain identity to access the chat.</p>
+                <button id="connect-wallet">Connect Wallet</button>
+                <div id="auth-status" class="hidden">
+                    <p>Connected Address: <span id="user-address"></span></p>
+                    <p>
+                        Verification Level:
+                        <span id="verification-level">Not Verified</span>
+                    </p>
+                    <p>
+                        Reputation Score: <span id="reputation-score">0</span>
+                    </p>
+                </div>
+                <div id="auth-error" class="error hidden"></div>
+            </div>
+
+            <div id="chat-section" class="hidden">
+                <div id="reputation-badge"></div>
+                <div id="chat-messages"></div>
+                <div id="message-input">
+                    <textarea
+                        id="message-text"
+                        placeholder="Type your message here..."
+                    ></textarea>
+                    <button id="send-message">Send</button>
+                </div>
+            </div>
+
+            <div id="report-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Report Message</h3>
+                    <p>Message: <span id="reported-message"></span></p>
+                    <p>From: <span id="reported-user"></span></p>
+                    <label for="report-reason">Reason:</label>
+                    <select id="report-reason">
+                        <option value="harmful">Harmful Content</option>
+                        <option value="spam">Spam</option>
+                        <option value="abuse">Abuse/Harassment</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <div class="modal-buttons">
+                        <button id="submit-report">Submit Report</button>
+                        <button id="cancel-report">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="public/js/blockchain-auth.js"></script>
+        <script src="public/js/messenger-app.js"></script>
+    </body>
+</html>
