@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Secure Messenger with Blockchain Identity</title>
+        <title>Messenger with Blockchain Identity</title>
         <link rel="stylesheet" href="public/css/styles.css" />
         <script
             src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.2.0/ethers.umd.min.js"
@@ -13,7 +13,7 @@
     </head>
     <body>
         <div class="container">
-            <h1>Secure Messenger</h1>
+            <h1>Messenger</h1>
             <div id="login-section">
                 <h2>Connect Your Wallet</h2>
                 <p>Sign in with your blockchain identity to access the chat.</p>
@@ -36,7 +36,10 @@
                     <div id="user-details">
                         <div id="user-name"></div>
                         <div id="user-address" class="user-address"></div>
-                        <div id="user-verification" class="user-verification"></div>
+                        <div
+                            id="user-verification"
+                            class="user-verification"
+                        ></div>
                     </div>
                     <div id="reputation-badge"></div>
                 </div>
@@ -65,11 +68,17 @@
                         <option value="impersonation">Impersonation</option>
                         <option value="other">Other</option>
                     </select>
-                    <textarea 
-                        id="report-details" 
-                        placeholder="Please provide additional details about this report..." 
-                        rows="3" 
-                        style="width: 100%; margin: 10px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                    <textarea
+                        id="report-details"
+                        placeholder="Please provide additional details about this report..."
+                        rows="3"
+                        style="
+                            width: 100%;
+                            margin: 10px 0;
+                            padding: 8px;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                        "
                     ></textarea>
                     <div class="modal-buttons">
                         <button id="submit-report">Submit Report</button>
